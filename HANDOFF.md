@@ -4,7 +4,7 @@ Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento preva
 
 ## Implementazione delle cinque feature concordate
 
-L'utente ha approvato il brand `margin`, UI in inglese e le cinque feature: quaderni/importazione, scrittura, tutor contestuale, nuovo tentativo/memoria, dispense/fonti. Ha chiesto di analizzare prima il codice esistente. Branch attivo osservato: `gian`. La cartella `output/` conteneva mockup preesistenti non tracciati; non è inclusa nella pubblicazione del codice.
+L'utente ha approvato il brand `margin`, UI in inglese e le cinque feature: quaderni/importazione, scrittura, tutor contestuale, nuovo tentativo/memoria, dispense/fonti. Ha chiesto di analizzare prima il codice esistente. Branch attivo osservato: `gian`. La cartella `output/` contiene mockup esplorativi: il commit locale `1cbaea8`, comparso durante il lavoro, li include insieme all’implementazione. Il commit è preservato; le immagini non sono usate come interfaccia dal frontend.
 
 La base già implementava biblioteca per materia, materiali originali, pagine continue, selezione e aiuti nel margine. Queste scelte sono preservate: nessuna sidebar tutor fissa ripristinata dai mockup.
 
@@ -26,7 +26,7 @@ Fonti: massimo sei documenti selezionati, PDF testuali fino a 100 pagine, otto e
 
 Nessuna verifica simbolica, account, sync, autenticazione pubblica, pinch zoom o palm rejection avanzata. I pannelli sono temporanei e richiudibili. Apple Pencil va provata su hardware reale. Il backend non conserva pagine o conversazioni; store=False non sostituisce una politica sulla conservazione presso il provider.
 
-Le verifiche aggiornate sono in docs/VERIFICA.md. Il precedente handoff sotto è conservato come storia e non descrive tutte le nuove feature.
+Verificati 28 test frontend, 12 backend, build e flusso browser con export PNG scaricato e aperto. Le verifiche aggiornate sono in docs/VERIFICA.md. Il precedente handoff sotto è conservato come storia e non descrive tutte le nuove feature.
 
 ---
 

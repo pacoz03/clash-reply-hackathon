@@ -243,6 +243,7 @@ export default function App() {
   }, [notebook?.pages.length, activeId, scale]);
   useEffect(() => {
     setSelection(null);
+    setQuestion("");
     setComposerPage((current) => (current === page?.id ? current : null));
   }, [page?.id]);
   useEffect(() => () => requestRef.current?.abort(), []);
@@ -286,6 +287,8 @@ export default function App() {
     setSelection(null);
     setComposerPage(null);
     setPanel(null);
+    setQuestion("");
+    setIntent("hint");
     setZoom(1);
   };
   const goHome = () => {
@@ -295,6 +298,8 @@ export default function App() {
     setSelection(null);
     setComposerPage(null);
     setPanel(null);
+    setQuestion("");
+    setIntent("hint");
   };
   const addPage = () => {
     if (!notebook) return;
@@ -316,6 +321,7 @@ export default function App() {
     const target = targetEntry?.notebook.pages.find((p) => p.id === pageId);
     const canvas = canvasRefs.current.get(pageId);
     if (!target || !canvas) return;
+    const prompt = composerPage === pageId ? question.trim() : "";
     setBusy(true);
     setNotice("");
     const controller = new AbortController();
@@ -334,7 +340,7 @@ export default function App() {
                 ? selection.region
                 : null
               : region,
-          question: question.trim(),
+          question: prompt,
           intent: requestedIntent,
           previousHints: target.annotations.slice(-10).map((a) => a.text),
           observations: targetEntry?.notebook.observations
@@ -354,7 +360,7 @@ export default function App() {
             [
               target.title,
               targetEntry?.notebook.title,
-              question,
+              prompt,
               ...target.annotations.slice(-2).map((a) => a.text),
             ].join(" "),
           ),
