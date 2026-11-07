@@ -34,7 +34,7 @@ interface Props {
   importing: boolean;
 }
 const date = (value: number) =>
-  new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short" }).format(
+  new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(
     value,
   );
 export function LibraryHome({
@@ -62,14 +62,14 @@ export function LibraryHome({
   const notebooks = entries
     .filter((n) =>
       n.notebook.title
-        .toLocaleLowerCase("it")
-        .includes(search.toLocaleLowerCase("it")),
+        .toLocaleLowerCase("en")
+        .includes(search.toLocaleLowerCase("en")),
     )
     .sort((a, b) => b.updatedAt - a.updatedAt);
   const materials = library.materials.filter(
     (m) =>
       m.subjectId === subject.id &&
-      m.name.toLocaleLowerCase("it").includes(search.toLocaleLowerCase("it")),
+      m.name.toLocaleLowerCase("en").includes(search.toLocaleLowerCase("en")),
   );
   const recent = [...library.notebooks].sort(
     (a, b) => b.updatedAt - a.updatedAt,
@@ -105,14 +105,14 @@ export function LibraryHome({
           <span>M</span>
           <div>{entry.notebook.title}</div>
           <small>
-            MARGINE / {String(entry.notebook.pages.length).padStart(2, "0")}
+            MARGIN / {String(entry.notebook.pages.length).padStart(2, "0")}
           </small>
         </div>
         <div className="notebook-info">
-          <h3>{entry.notebook.title || "Quaderno senza titolo"}</h3>
+          <h3>{entry.notebook.title || "Untitled notebook"}</h3>
           <p>
             {entry.notebook.pages.length}{" "}
-            {entry.notebook.pages.length === 1 ? "foglio" : "fogli"}
+            {entry.notebook.pages.length === 1 ? "page" : "pages"}
             <span>·</span>
             {date(entry.updatedAt)}
           </p>
@@ -121,21 +121,21 @@ export function LibraryHome({
       </button>
       {confirmDelete === entry.id ? (
         <div className="delete-confirm">
-          <span>Eliminare questo quaderno e tutti i suoi fogli?</span>
+          <span>Delete this notebook, its pages and learning notes?</span>
           <button
             onClick={() => {
               dispatch({ type: "delete-notebook", id: entry.id });
               setConfirmDelete(null);
             }}
           >
-            Elimina
+            Delete
           </button>
-          <button onClick={() => setConfirmDelete(null)}>Annulla</button>
+          <button onClick={() => setConfirmDelete(null)}>Cancel</button>
         </div>
       ) : (
         <button
           className="icon-button notebook-delete"
-          aria-label={`Elimina ${entry.notebook.title}`}
+          aria-label={`Delete ${entry.notebook.title}`}
           onClick={() => setConfirmDelete(entry.id)}
         >
           <Trash2 size={15} />
@@ -146,22 +146,22 @@ export function LibraryHome({
   return (
     <main className="library-home">
       <div className="library-topline">
-        <span className="eyebrow">IL TUO SPAZIO DI STUDIO</span>
+        <span className="eyebrow">YOUR STUDY SPACE</span>
         <span className="local-label">
-          <span className="status-dot" /> Sul tuo dispositivo
+          <span className="status-dot" /> On this device
         </span>
       </div>
       <section className="library-intro">
         <div>
           <h1>
-            Spazio ai tuoi
+            Room for your
             <br />
-            <em>ragionamenti.</em>
+            <em>thinking.</em>
           </h1>
           <p>
-            Una materia, i suoi materiali, i tuoi quaderni.
+            Your courses, your material, your notebooks.
             <br />
-            Riparti da dove si è fermata la penna.
+            AI guidance, right beside your notes.
           </p>
         </div>
         {recent ? (
@@ -170,21 +170,19 @@ export function LibraryHome({
               <BookOpen size={25} strokeWidth={1.3} />
             </span>
             <span>
-              <small>CONTINUA A SCRIVERE</small>
-              <strong>
-                {recent.notebook.title || "Quaderno senza titolo"}
-              </strong>
+              <small>PICK UP WHERE YOU LEFT OFF</small>
+              <strong>{recent.notebook.title || "Untitled notebook"}</strong>
               <span>
                 {library.subjects.find((s) => s.id === recent.subjectId)?.name}{" "}
                 · {recent.notebook.pages.length}{" "}
-                {recent.notebook.pages.length === 1 ? "foglio" : "fogli"}
+                {recent.notebook.pages.length === 1 ? "page" : "pages"}
               </span>
             </span>
             <ArrowRight size={21} />
           </button>
         ) : null}
       </section>
-      <nav className="subject-tabs" aria-label="Materie">
+      <nav className="subject-tabs" aria-label="Courses">
         {library.subjects.map((s) => (
           <button
             key={s.id}
@@ -204,15 +202,13 @@ export function LibraryHome({
         ))}
         <button className="new-subject" onClick={() => begin("subject")}>
           <Plus size={16} />
-          Nuova materia
+          New course
         </button>
       </nav>
       {creating ? (
         <form className="inline-create" onSubmit={submit}>
           <label htmlFor="new-name">
-            {creating === "subject"
-              ? "Nome della materia"
-              : "Nome del quaderno"}
+            {creating === "subject" ? "Course name" : "Notebook name"}
           </label>
           <input
             id="new-name"
@@ -221,15 +217,15 @@ export function LibraryHome({
             maxLength={80}
             placeholder={
               creating === "subject"
-                ? "Es. Fisica generale"
-                : "Es. Esercizi del primo semestre"
+                ? "e.g. General physics"
+                : "e.g. First semester exercises"
             }
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           {creating === "notebook" ? (
             <select
-              aria-label="Materia del nuovo quaderno"
+              aria-label="Course for the new notebook"
               value={newSubjectId}
               onChange={(e) => setNewSubjectId(e.target.value)}
             >
@@ -245,13 +241,13 @@ export function LibraryHome({
             type="submit"
             disabled={!name.trim()}
           >
-            Crea {creating === "subject" ? "materia" : "quaderno"}
+            Create {creating === "subject" ? "course" : "notebook"}
             <ArrowRight size={16} />
           </button>
           <button
             className="icon-button"
             type="button"
-            aria-label="Annulla creazione"
+            aria-label="Cancel creation"
             onClick={() => setCreating(null)}
           >
             <X size={18} />
@@ -261,14 +257,14 @@ export function LibraryHome({
       <section className="subject-content" aria-label={subject.name}>
         <div className="subject-heading">
           <div>
-            <span className="eyebrow">LA TUA MATERIA</span>
+            <span className="eyebrow">YOUR COURSE</span>
             <h2>{subject.name}</h2>
           </div>
           <label className="library-search">
             <Search size={17} />
             <input
-              aria-label="Cerca quaderni e materiali"
-              placeholder="Cerca in questa materia"
+              aria-label="Search notebooks and material"
+              placeholder="Search this course"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -276,14 +272,14 @@ export function LibraryHome({
         </div>
         <div className="collection-heading">
           <h3>
-            Quaderni <span>{entries.length}</span>
+            Notebooks <span>{entries.length}</span>
           </h3>
           <button
             className="button button-primary"
             onClick={() => begin("notebook")}
           >
             <Plus size={17} />
-            Nuovo quaderno
+            New notebook
           </button>
         </div>
         <div className="notebook-collection">
@@ -292,21 +288,19 @@ export function LibraryHome({
             <div className="collection-empty">
               <BookOpen size={25} strokeWidth={1.2} />
               <h3>
-                {search
-                  ? "Nessun quaderno trovato"
-                  : "Il primo foglio ti aspetta."}
+                {search ? "No notebooks found" : "Your first page awaits."}
               </h3>
               <p>
                 {search
-                  ? "Prova con un altro nome."
-                  : "Crea un quaderno e scrivi un esercizio, oppure importa una consegna."}
+                  ? "Try another name."
+                  : "Create a notebook, then write an exercise or import a problem."}
               </p>
               {!search ? (
                 <button
                   className="text-button"
                   onClick={() => begin("notebook")}
                 >
-                  Crea il primo quaderno <ArrowRight size={16} />
+                  Create your first notebook <ArrowRight size={16} />
                 </button>
               ) : null}
             </div>
@@ -316,7 +310,7 @@ export function LibraryHome({
           <div className="collection-heading">
             <div>
               <h3>
-                Materiali{" "}
+                Course material{" "}
                 <span>
                   {
                     library.materials.filter((m) => m.subjectId === subject.id)
@@ -324,7 +318,7 @@ export function LibraryHome({
                   }
                 </span>
               </h3>
-              <p>Dispense, appunti e consegne, nello stesso posto.</p>
+              <p>Lecture notes, handouts and exercises, together.</p>
             </div>
             <button
               className="button button-outline"
@@ -336,7 +330,7 @@ export function LibraryHome({
               ) : (
                 <FileUp size={16} />
               )}
-              Carica materiale
+              Add material
             </button>
           </div>
           <input
@@ -358,10 +352,10 @@ export function LibraryHome({
                   <div className="material-name">
                     <strong>{m.name}</strong>
                     <small>
-                      {m.type === "application/pdf" ? "PDF" : "Immagine"} ·{" "}
+                      {m.type === "application/pdf" ? "PDF" : "Image"} ·{" "}
                       {m.size < 1024 * 1024
                         ? `${Math.max(1, Math.round(m.size / 1024))} KB`
-                        : `${(m.size / 1024 / 1024).toLocaleString("it-IT", { maximumFractionDigits: 1 })} MB`}{" "}
+                        : `${(m.size / 1024 / 1024).toLocaleString("en-GB", { maximumFractionDigits: 1 })} MB`}{" "}
                       · {date(m.addedAt)}
                     </small>
                   </div>
@@ -370,34 +364,34 @@ export function LibraryHome({
                     disabled={importing}
                     onClick={() => setUsing(using === m.id ? null : m.id)}
                   >
-                    Usa in un quaderno <ChevronRight size={15} />
+                    Use in a notebook <ChevronRight size={15} />
                   </button>
                   <button
                     className="icon-button"
-                    aria-label={`Scarica ${m.name}`}
+                    aria-label={`Download ${m.name}`}
                     onClick={() => onDownload(m)}
                   >
                     <ArrowDownToLine size={17} />
                   </button>
                   {confirmDelete === m.id ? (
                     <div className="delete-confirm">
-                      <span>Eliminare il materiale?</span>
+                      <span>Delete this material?</span>
                       <button
                         onClick={() => {
                           onRemoveMaterial(m);
                           setConfirmDelete(null);
                         }}
                       >
-                        Elimina
+                        Delete
                       </button>
                       <button onClick={() => setConfirmDelete(null)}>
-                        Annulla
+                        Cancel
                       </button>
                     </div>
                   ) : (
                     <button
                       className="icon-button"
-                      aria-label={`Elimina ${m.name}`}
+                      aria-label={`Delete ${m.name}`}
                       onClick={() => setConfirmDelete(m.id)}
                     >
                       <Trash2 size={15} />
@@ -405,7 +399,7 @@ export function LibraryHome({
                   )}
                   {using === m.id ? (
                     <div className="material-picker">
-                      <span>Aggiungi come fogli in:</span>
+                      <span>Add as pages to:</span>
                       {entries.map((n) => (
                         <button
                           key={n.id}
@@ -421,7 +415,7 @@ export function LibraryHome({
                       ))}
                       {!entries.length ? (
                         <button onClick={() => begin("notebook")}>
-                          Crea prima un quaderno <Plus size={14} />
+                          Create a notebook first <Plus size={14} />
                         </button>
                       ) : null}
                     </div>
@@ -434,11 +428,11 @@ export function LibraryHome({
               <FolderOpen size={23} strokeWidth={1.2} />
               <p>
                 {search
-                  ? "Nessun materiale trovato."
-                  : "Aggiungi un PDF o un’immagine per questa materia."}
+                  ? "No material found."
+                  : "Add a PDF or image for this course."}
                 <small>
-                  I file restano sul dispositivo. Non sono ancora consultati dal
-                  tutor.
+                  Files stay on this device. Choose which documents the tutor
+                  can use from inside a notebook.
                 </small>
               </p>
             </div>
@@ -446,10 +440,8 @@ export function LibraryHome({
         </div>
       </section>
       <footer className="library-footer">
-        <span className="wordmark">
-          margine<span>.</span>
-        </span>
-        <p>Scrivi. Ragiona. Un passaggio alla volta.</p>
+        <span className="wordmark">margin</span>
+        <p>Write. Think. Understand.</p>
       </footer>
     </main>
   );

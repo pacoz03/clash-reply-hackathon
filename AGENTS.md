@@ -10,7 +10,7 @@ Prima di intervenire leggere:
 - `README.md`: avvio, architettura e contratto del backend.
 - `.impeccable.md`: contesto visivo scelto dall'utente.
 
-Comunicare con l'utente in italiano. Usare etichette e messaggi di prodotto in italiano.
+Comunicare con l'utente in italiano. Il brand concordato è **margin**, tutto minuscolo, con payoff **Write. Think. Understand.** e descrizione **AI guidance, right beside your notes.** Usare etichette e messaggi di prodotto in inglese, come richiesto per l'hackathon nella revisione di branding.
 
 ## Scelte di prodotto da rispettare
 
@@ -51,7 +51,7 @@ Scelta esplicita: quaderno minimale, carta chiara, inchiostro scuro, pochi coman
 
 ## AI e dipendenze
 
-Il backend AI non è ancora implementato. L'orientamento discusso è un backend Python/FastAPI leggero, SDK diretto del provider, Pydantic per gli schemi e strumenti Python; OpenAI Responses API è stata proposta. Agno è stato valutato come alternativa. Nessun modello specifico è stato selezionato e nessun framework agentico è stato installato.
+Il backend Python/FastAPI è in `backend/app.py`, con SDK OpenAI diretto, Pydantic e Responses API. Chiave e modello sono configurazioni server obbligatorie; nessun modello predefinito è scelto. I test usano un provider simulato, non certificano la qualità di un modello reale. Agno e verificatori simbolici non sono installati.
 
 Prima di scegliere un modello verificare le API correnti e confrontare casi scritti a mano su lettura, qualità dell'indizio, latenza e costo. Eventuale SymPy supporta verifiche applicabili, senza certificare universalmente ragionamento fisico, trascrizione e condizioni di validità.
 
@@ -66,7 +66,7 @@ npm run build
 
 Node di riferimento: 22.13.1. Testare reducer, cronologia, coordinate e gestione delle risposte asincrone quando modificati. Per cambiamenti al canvas verificare anche scrittura, selezione, zoom, importazione e recupero dopo reload nel browser. Le prove su browser desktop non sostituiscono Apple Pencil su un iPad reale.
 
-Non presentare il prototipo come conforme a tutti i requisiti della challenge: mancano backend reale, materiale universitario autentico e memoria didattica delle difficoltà. Aggiornare `HANDOFF.md` dopo cambiamenti sostanziali.
+Non presentare il prototipo come conforme a tutti i requisiti della challenge: il backend e la memoria sono implementati, ma mancano configurazione e validazione AI reale, materiale universitario autentico e confronto dei modelli. L’estrazione delle fonti è testuale/lessicale, senza OCR o embeddings. Aggiornare `HANDOFF.md` dopo cambiamenti sostanziali.
 
 ## Git e collaborazione
 

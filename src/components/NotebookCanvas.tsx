@@ -97,7 +97,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={60}
             y={72}
-            text="ESEMPIO GUIDATO   /   01"
+            text="GUIDED EXAMPLE   /   01"
             fontFamily="DM Sans"
             fontSize={11}
             letterSpacing={1.4}
@@ -106,7 +106,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={60}
             y={106}
-            text="La regola della catena"
+            text="The chain rule"
             fontFamily="Lora"
             fontSize={29}
             fill="#293b34"
@@ -114,7 +114,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={60}
             y={153}
-            text="Calcola la derivata della seguente funzione."
+            text="Find the derivative of the following function."
             fontFamily="DM Sans"
             fontSize={14}
             fill="#647065"
@@ -130,7 +130,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={68}
             y={300}
-            text="Provo a derivare…"
+            text="Trying the derivative…"
             fontFamily="Caveat"
             fontSize={27}
             fill="#697369"
@@ -146,7 +146,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={71}
             y={429}
-            text="Manca qualcosa?"
+            text="Something missing?"
             fontFamily="Caveat"
             fontSize={27}
             fill="#697369"
@@ -161,7 +161,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
             x={586}
             y={225}
             width={145}
-            text="Un po’ di spazio\nper un altro\npunto di vista."
+            text={"A little room\nfor another\npoint of view."}
             lineHeight={1.6}
             fontFamily="Lora"
             fontStyle="italic"
@@ -171,7 +171,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
           <Text
             x={60}
             y={page.height - 72}
-            text="Esempio illustrativo · puoi scrivere sopra oppure aggiungere un foglio vuoto."
+            text="Illustrative example · write on this page or add a blank one."
             fontFamily="DM Sans"
             fontSize={10}
             fill="#8b9186"
@@ -225,7 +225,7 @@ export const NotebookCanvas = forwardRef<CanvasHandle, Props>(
       () => ({
         snapshot() {
           const stage = stageRef.current;
-          if (!stage) throw new Error("Il foglio non è ancora pronto.");
+          if (!stage) throw new Error("The page is not ready yet.");
           const overlay = overlayRef.current;
           overlay?.hide();
           try {
@@ -350,7 +350,7 @@ export const NotebookCanvas = forwardRef<CanvasHandle, Props>(
         style={{ width: PAGE_WIDTH * scale, height: page.height * scale }}
         data-testid="notebook-canvas"
         role="img"
-        aria-label={`Foglio ${page.title}. Usa la penna per scrivere o lo strumento selezione per chiedere aiuto.`}
+        aria-label={`Page ${page.title}. Use the pen to write or select a step to ask for help.`}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={(event) => finish(event)}

@@ -9,6 +9,7 @@ import { MessageCircle, Sparkles, X } from "lucide-react";
 import { NotebookCanvas, type CanvasHandle } from "./NotebookCanvas";
 import {
   PAGE_WIDTH,
+  type Annotation,
   type Page,
   type Selection,
   type Stroke,
@@ -16,6 +17,7 @@ import {
 } from "../model";
 import { layoutNotes } from "../note-layout";
 import { tutorMode } from "../services/tutor";
+import type { Material } from "../library";
 
 interface Props {
   page: Page;
@@ -34,7 +36,9 @@ interface Props {
   onActivate: () => void;
   onSelection: (selection: Selection | null) => void;
   onStroke: (stroke: Stroke) => void;
-  onHelp: (region?: Selection | null) => void;
+  onHelp: (region?: Selection | null, intent?: "hint" | "check") => void;
+  onSource: (ref: NonNullable<Annotation["sourceRef"]>) => void;
+  materials: Material[];
   onCompose: () => void;
   onRemove: (id: string) => void;
   composer: ReactNode;
@@ -97,15 +101,15 @@ export function PageSurface(props: Props) {
       ref={sectionRef}
       className={`page-section ${active ? "active-page" : ""}`}
       data-page-id={page.id}
-      aria-label={`Foglio ${index + 1}: ${page.title}`}
+      aria-label={`Page ${index + 1}: ${page.title}`}
       style={{ width: PAGE_WIDTH * scale }}
     >
       <div className="page-meta">
         <button onClick={props.onActivate}>
-          FOGLIO {String(index + 1).padStart(2, "0")}
+          PAGE {String(index + 1).padStart(2, "0")}
           <span>{page.title}</span>
         </button>
-        <span>{page.background ? "Importato" : "Scrivi liberamente"}</span>
+        <span>{page.background ? "Imported" : "Write freely"}</span>
       </div>
       <div
         className="sheet-stack"
@@ -162,18 +166,18 @@ export function PageSurface(props: Props) {
               disabled={props.busy}
             >
               <Sparkles size={15} />
-              Aiuto AI{tutorMode === "demo" ? <small>DEMO</small> : null}
+              Ask margin{tutorMode === "demo" ? <small>DEMO</small> : null}
             </button>
             <button
               className="icon-button"
-              aria-label="Aggiungi una domanda"
+              aria-label="Add a question"
               onClick={props.onCompose}
             >
               <MessageCircle size={16} />
             </button>
             <button
               className="icon-button"
-              aria-label="Rimuovi selezione"
+              aria-label="Clear selection"
               onClick={() => props.onSelection(null)}
             >
               <X size={14} />
@@ -185,7 +189,7 @@ export function PageSurface(props: Props) {
           <aside
             ref={notesRef}
             className="page-notes"
-            aria-label={`Indizi sul foglio ${index + 1}`}
+            aria-label={`Hints on page ${index + 1}`}
           >
             {!compact ? (
               <svg
@@ -221,7 +225,7 @@ export function PageSurface(props: Props) {
                 <div className="note-heading">
                   <button
                     className="note-collapse"
-                    aria-label={`${collapsed.has(annotation.id) ? "Espandi" : "Comprimi"} indizio ${i + 1}`}
+                    aria-label={`${collapsed.has(annotation.id) ? "Expand" : "Collapse"} hint ${i + 1}`}
                     aria-expanded={!collapsed.has(annotation.id)}
                     onClick={() =>
                       setCollapsed((previous) => {
@@ -233,12 +237,17 @@ export function PageSurface(props: Props) {
                     }
                   >
                     <Sparkles size={12} />{" "}
-                    {tutorMode === "demo" ? "INDIZIO DEMO" : "INDIZIO AI"} ·{" "}
-                    {i + 1}
+                    {annotation.mode === "demo" ||
+                    annotation.source?.toLowerCase().includes("demo")
+                      ? "DEMO HINT"
+                      : annotation.mode === "connected"
+                        ? "AI NOTE"
+                        : "NOTE"}{" "}
+                    · {i + 1}
                   </button>
                   <button
                     className="icon-button"
-                    aria-label={`Rimuovi indizio ${i + 1} dal foglio ${index + 1}`}
+                    aria-label={`Remove hint ${i + 1} from page ${index + 1}`}
                     onClick={() => props.onRemove(annotation.id)}
                   >
                     <X size={14} />
@@ -247,7 +256,28 @@ export function PageSurface(props: Props) {
                 {!collapsed.has(annotation.id) ? (
                   <>
                     <p>{annotation.text}</p>
-                    {annotation.source ? (
+                    {annotation.revision !== undefined &&
+                    annotation.revision !== page.revision ? (
+                      <small className="earlier-note">
+                        Based on earlier writing
+                      </small>
+                    ) : null}
+                    {annotation.sourceRef ? (
+                      <button
+                        className="note-source"
+                        disabled={
+                          !props.materials.some(
+                            (m) => m.id === annotation.sourceRef?.materialId,
+                          )
+                        }
+                        onClick={() => props.onSource(annotation.sourceRef!)}
+                      >
+                        {props.materials.find(
+                          (m) => m.id === annotation.sourceRef?.materialId,
+                        )?.name ?? "Source no longer available"}{" "}
+                        · p. {annotation.sourceRef.page} ↗
+                      </button>
+                    ) : annotation.source ? (
                       <small>{annotation.source}</small>
                     ) : null}
                     <button
@@ -256,10 +286,20 @@ export function PageSurface(props: Props) {
                       onClick={() => {
                         props.onActivate();
                         props.onSelection(annotation.anchor);
-                        props.onHelp(annotation.anchor);
+                        props.onHelp(annotation.anchor, "hint");
                       }}
                     >
-                      Un altro indizio <span aria-hidden="true">↗</span>
+                      Another hint <span aria-hidden="true">↗</span>
+                    </button>
+                    <button
+                      className="note-next"
+                      disabled={props.busy}
+                      onClick={() => {
+                        props.onActivate();
+                        props.onHelp(annotation.anchor, "check");
+                      }}
+                    >
+                      Check my update <span aria-hidden="true">↗</span>
                     </button>
                   </>
                 ) : null}

@@ -17,6 +17,45 @@ function setup(): LibraryState {
   return { library: createLibrary(), history: {} };
 }
 describe("biblioteca e compatibilità", () => {
+  it("attaches only material from the notebook's course and detaches it when deleted", () => {
+    let state = setup();
+    const entry = state.library.notebooks[0];
+    const material = {
+      id: "pdf",
+      subjectId: entry.subjectId,
+      name: "Notes.pdf",
+      size: 1,
+      type: "application/pdf",
+      addedAt: 1,
+    };
+    state = libraryReducer(state, { type: "add-material", material });
+    state = libraryReducer(state, {
+      type: "material-text",
+      id: "pdf",
+      pages: ["A real excerpt"],
+    });
+    state = libraryReducer(state, {
+      type: "attach-material",
+      notebookId: entry.id,
+      materialId: "pdf",
+      attached: true,
+    });
+    expect(state.library.notebooks[0].materialIds).toEqual(["pdf"]);
+    expect(librarySchema.parse(state.library)).toEqual(state.library);
+    state = libraryReducer(state, {
+      type: "add-material",
+      material: { ...material, id: "other", subjectId: "different" },
+    });
+    state = libraryReducer(state, {
+      type: "attach-material",
+      notebookId: entry.id,
+      materialId: "other",
+      attached: true,
+    });
+    expect(state.library.notebooks[0].materialIds).toEqual(["pdf"]);
+    state = libraryReducer(state, { type: "remove-material", id: "pdf" });
+    expect(state.library.notebooks[0].materialIds).toEqual([]);
+  });
   it("incapsula il quaderno precedente senza perdere pagine, tratti o annotazioni", () => {
     const old = initialNotebook();
     old.pages[0].strokes.push(stroke);

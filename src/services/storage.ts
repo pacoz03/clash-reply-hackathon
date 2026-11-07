@@ -15,7 +15,7 @@ function openDb() {
     request.onblocked = () =>
       reject(
         new Error(
-          "Chiudi le altre schede di Margine e ricarica per aggiornare il salvataggio.",
+          "Close other margin tabs and reload to update local storage.",
         ),
       );
   });
@@ -35,7 +35,7 @@ export async function loadLibrary(): Promise<Library> {
     const parsed = librarySchema.safeParse(saved);
     if (!parsed.success)
       throw new Error(
-        "La biblioteca salvata non è leggibile. I dati originali non sono stati modificati.",
+        "The saved library could not be read. Your original data has not been changed.",
       );
     for (const entry of parsed.data.notebooks) {
       if (
@@ -50,7 +50,7 @@ export async function loadLibrary(): Promise<Library> {
     const parsed = notebookSchema.safeParse(legacy);
     if (!parsed.success)
       throw new Error(
-        "Il quaderno salvato non è leggibile. I dati originali non sono stati modificati.",
+        "The saved notebook could not be read. Your original data has not been changed.",
       );
     const notebook = parsed.data;
     if (!notebook.pages.some((p) => p.id === notebook.activePageId))
@@ -93,7 +93,7 @@ export async function loadMaterial(id: string): Promise<Blob> {
   const file = await read("materials", id);
   if (!(file instanceof Blob))
     throw new Error(
-      "Il file non è disponibile sul dispositivo. Caricalo di nuovo.",
+      "This file is unavailable on this device. Please add it again.",
     );
   return file;
 }

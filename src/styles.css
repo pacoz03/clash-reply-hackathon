@@ -915,9 +915,9 @@ button:hover:not(:disabled) {
   min-height: 30px;
 }
 .margin-note p {
-  font-family: "Caveat", cursive;
-  font-size: 23px;
-  line-height: 1.2;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
   margin: 4px 0 10px;
   overflow-wrap: anywhere;
 }
@@ -1183,7 +1183,7 @@ button:hover:not(:disabled) {
     z-index: 3;
   }
   .margin-note p {
-    font-size: 22px;
+    font-size: 13px;
   }
   .page-meta button span {
     max-width: 220px;
@@ -1579,4 +1579,77 @@ button:hover:not(:disabled) {
   .tutor-tool { padding: 0 3px; }
   .editor-instruction { white-space: normal; text-align: center; }
   .notebook-name input { font-size: 10px; }
+}
+
+/* Course references and learning notes share a temporary panel; the notebook stays continuous. */
+.notebook-panel {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  right: 16px;
+  bottom: 68px;
+  width: min(400px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px oklch(27% 0.035 166 / 0.12);
+}
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 24px 18px; border-bottom: 1px solid var(--line); }
+.panel-heading h2 { font-family: "Lora", serif; font-size: 25px; font-weight: 400; letter-spacing: -0.7px; margin: 8px 0 0; }
+.panel-heading .eyebrow { font-size: 9px; }
+.panel-content { overflow-y: auto; min-height: 0; padding: 20px 24px 28px; overscroll-behavior: contain; }
+.panel-intro, .panel-footnote, .panel-empty p { font-size: 13px; line-height: 1.75; color: var(--muted); margin: 0 0 20px; max-width: 65ch; }
+.panel-footnote { font-size: 11px; margin: 24px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.panel-empty { padding: 40px 0 20px; }
+.panel-empty h3 { font-family: "Lora", serif; font-size: 22px; font-weight: 400; line-height: 1.4; }
+.course-material-list { list-style: none; margin: 20px 0 0; padding: 0; }
+.course-material-list li { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.material-preview-link { display: flex; align-items: center; text-align: left; gap: 12px; min-height: 48px; padding: 0; width: 100%; }
+.material-preview-link > span { flex: 1; min-width: 0; }
+.material-preview-link strong { display: block; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.material-preview-link small { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.material-preview-link > svg { flex-shrink: 0; }
+.attach-material { display: flex; align-items: center; gap: 9px; min-height: 44px; font-size: 12px; line-height: 1.5; margin-top: 8px; }
+.attach-material input { width: 16px; height: 16px; accent-color: var(--ink); flex-shrink: 0; }
+.material-explanation { display: block; font-size: 11px; line-height: 1.65; color: var(--muted); }
+.source-title { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; margin: 20px 0 8px; }
+.source-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; margin-bottom: 12px; }
+.source-preview { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+.source-quote { padding: 16px; margin: 20px 0; background: var(--sage); border-radius: 5px; }
+.source-quote p { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; margin-bottom: 0; }
+.panel-status { display: flex; gap: 10px; align-items: center; min-height: 120px; font-size: 13px; }
+.note-source { display: block; text-align: left; font-size: 10px; line-height: 1.6; min-height: 36px; overflow-wrap: anywhere; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
+.earlier-note { margin-bottom: 8px; font-style: italic; }
+.session-timeline { list-style: none; padding: 0; margin: 0 0 24px; }
+.session-event { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.session-event:first-child { padding-top: 4px; }
+.session-event-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 10px; color: var(--muted); }
+.session-event-meta > span { background: var(--sage); border-radius: 3px; padding: 5px 8px; }
+.session-event h3 { font-size: 15px; font-weight: 500; margin: 16px 0 8px; }
+.session-event p { font-size: 13px; line-height: 1.7; margin: 8px 0; overflow-wrap: anywhere; }
+.session-event > small { display: block; font-size: 10px; line-height: 1.6; margin: 12px 0 4px; color: var(--muted); }
+.session-event details { font-size: 12px; line-height: 1.6; margin-top: 8px; }
+.session-event summary { cursor: pointer; padding: 8px 0; }
+.session-event details p { font-size: 12px; color: var(--muted); }
+.session-event form { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.session-event form label { font-size: 12px; }
+.session-event textarea { min-height: 100px; font-size: 16px; padding: 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); resize: vertical; width: 100%; }
+.session-edit-actions, .clear-learning { display: flex; gap: 16px; flex-wrap: wrap; }
+.clear-learning p { width: 100%; font-size: 13px; line-height: 1.7; }
+.notebook-name { overflow: hidden; }
+.notebook-name input { min-width: 0; }
+@media (max-width: 600px) {
+  .notebook-panel { right: 8px; top: 8px; bottom: 62px; width: calc(100% - 16px); }
+  .panel-heading { padding: 18px; }
+  .panel-content { padding: 18px; }
+  .editor-shell .header-actions { flex-shrink: 0; }
+  .editor-shell .header-actions > .icon-button { min-width: 32px; }
+  .inline-tutor textarea, .inline-tutor select { font-size: 16px; }
+  .inline-create input { font-size: 16px; }
+}
+@media (pointer: coarse) {
+  .note-source { min-height: 44px; }
+  .session-event summary { min-height: 44px; }
 }

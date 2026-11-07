@@ -9,6 +9,7 @@ import {
   ArrowDownToLine,
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Check,
   ChevronDown,
   Eraser,
@@ -16,6 +17,7 @@ import {
   EyeOff,
   FileUp,
   Hand,
+  History,
   LoaderCircle,
   Minus,
   PenLine,
@@ -30,6 +32,15 @@ import {
 } from "lucide-react";
 import { PageSurface } from "./components/PageSurface";
 import { LibraryHome } from "./components/LibraryHome";
+import {
+  CourseMaterialPanel,
+  type SourceView,
+} from "./components/CourseMaterialPanel";
+import { SessionPanel } from "./components/SessionPanel";
+import {
+  extractMaterialText,
+  selectSourceExcerpts,
+} from "./services/materials";
 import type { CanvasHandle } from "./components/NotebookCanvas";
 import {
   newPage,
@@ -54,14 +65,15 @@ import {
 } from "./services/storage";
 import { requestTutor, tutorMode } from "./services/tutor";
 import { importDocument } from "./services/import";
+import { downloadBlob, downloadPng } from "./services/download";
 
 const tools = [
-  { id: "pen", label: "Penna", key: "P", icon: PenLine },
-  { id: "eraser", label: "Gomma", key: "E", icon: Eraser },
-  { id: "select", label: "Seleziona", key: "S", icon: Scan },
-  { id: "hand", label: "Sposta", key: "H", icon: Hand },
+  { id: "pen", label: "Pen", key: "P", icon: PenLine },
+  { id: "eraser", label: "Eraser", key: "E", icon: Eraser },
+  { id: "select", label: "Select", key: "S", icon: Scan },
+  { id: "hand", label: "Pan", key: "H", icon: Hand },
 ] as const;
-const colors = ["#273c46", "#4c7052", "#b76e51"];
+const colors = ["#20382f", "#4c7052", "#b76e51"];
 export default function App() {
   const [state, dispatch] = useReducer(
     libraryReducer,
@@ -75,7 +87,7 @@ export default function App() {
   const [subjectId, setSubjectId] = useState("");
   const [ready, setReady] = useState(false);
   const [storageBlocked, setStorageBlocked] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("Caricamento…");
+  const [saveStatus, setSaveStatus] = useState("Loading…");
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState(colors[0]);
   const [penWidth, setPenWidth] = useState(2.5);
@@ -88,7 +100,10 @@ export default function App() {
   const [composerPage, setComposerPage] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [question, setQuestion] = useState("");
-  const [intent, setIntent] = useState("Un indizio");
+  const [intent, setIntent] = useState<"hint" | "explain" | "check">("hint");
+  const [panel, setPanel] = useState<"materials" | "session" | null>(null);
+  const [sourceView, setSourceView] = useState<SourceView | null>(null);
+  const [indexing, setIndexing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [importing, setImporting] = useState(false);
   const [notice, setNotice] = useState("");
@@ -125,7 +140,7 @@ export default function App() {
           setNotice(
             error instanceof Error
               ? error.message
-              : "Salvataggio locale non disponibile.",
+              : "Local storage is unavailable.",
           );
         }
       })
@@ -139,16 +154,16 @@ export default function App() {
   useEffect(() => {
     if (!ready || storageBlocked) return;
     let current = true;
-    setSaveStatus("Salvataggio…");
+    setSaveStatus("Saving…");
     saveLibrary(library)
       .then(() => {
-        if (current) setSaveStatus("Salvato sul dispositivo");
+        if (current) setSaveStatus("Saved on this device");
       })
       .catch(() => {
         if (current) {
-          setSaveStatus("Salvataggio non riuscito");
+          setSaveStatus("Could not save");
           setNotice(
-            "Non riesco a salvare sul dispositivo. Esporta i fogli prima di chiudere.",
+            "Could not save on this device. Export your pages before closing.",
           );
         }
       });
@@ -228,7 +243,7 @@ export default function App() {
   }, [notebook?.pages.length, activeId, scale]);
   useEffect(() => {
     setSelection(null);
-    setComposerPage(null);
+    setComposerPage((current) => (current === page?.id ? current : null));
   }, [page?.id]);
   useEffect(() => () => requestRef.current?.abort(), []);
   useEffect(() => {
@@ -254,6 +269,7 @@ export default function App() {
         setSelection(null);
         setComposerPage(null);
         setOptionsOpen(false);
+        setPanel(null);
       }
     };
     window.addEventListener("keydown", handler);
@@ -269,6 +285,7 @@ export default function App() {
     setActiveId(id);
     setSelection(null);
     setComposerPage(null);
+    setPanel(null);
     setZoom(1);
   };
   const goHome = () => {
@@ -277,6 +294,7 @@ export default function App() {
     setActiveId(null);
     setSelection(null);
     setComposerPage(null);
+    setPanel(null);
   };
   const addPage = () => {
     if (!notebook) return;
@@ -285,12 +303,17 @@ export default function App() {
     edit({ type: "add-pages", pages: [next] });
     setTool("pen");
   };
-  const help = async (pageId: string, region?: Selection | null) => {
+  const help = async (
+    pageId: string,
+    region?: Selection | null,
+    requestedIntent: "hint" | "explain" | "check" = "hint",
+  ) => {
     if (!activeId || busy || requestRef.current) return;
     const targetNotebookId = activeId;
-    const target = stateRef.current.library.notebooks
-      .find((n) => n.id === targetNotebookId)
-      ?.notebook.pages.find((p) => p.id === pageId);
+    const targetEntry = stateRef.current.library.notebooks.find(
+      (n) => n.id === targetNotebookId,
+    );
+    const target = targetEntry?.notebook.pages.find((p) => p.id === pageId);
     const canvas = canvasRefs.current.get(pageId);
     if (!target || !canvas) return;
     setBusy(true);
@@ -301,6 +324,7 @@ export default function App() {
     try {
       const response = await requestTutor(
         {
+          notebookId: targetNotebookId,
           pageId,
           revision: target.revision,
           image: canvas.snapshot(),
@@ -310,8 +334,30 @@ export default function App() {
                 ? selection.region
                 : null
               : region,
-          question: `${intent}. ${question}`.trim(),
-          previousHints: target.annotations.map((a) => a.text),
+          question: question.trim(),
+          intent: requestedIntent,
+          previousHints: target.annotations.slice(-10).map((a) => a.text),
+          observations: targetEntry?.notebook.observations
+            ?.filter((o) => o.pageId === pageId && o.mode === tutorMode)
+            .slice(-12)
+            .map(({ summary, outcome, revision }) => ({
+              summary,
+              outcome,
+              revision,
+            })),
+          sources: selectSourceExcerpts(
+            stateRef.current.library.materials.filter(
+              (m) =>
+                targetEntry?.materialIds?.includes(m.id) &&
+                m.subjectId === targetEntry.subjectId,
+            ),
+            [
+              target.title,
+              targetEntry?.notebook.title,
+              question,
+              ...target.annotations.slice(-2).map((a) => a.text),
+            ].join(" "),
+          ),
         },
         target,
         controller.signal,
@@ -322,7 +368,7 @@ export default function App() {
         ?.notebook.pages.find((p) => p.id === pageId);
       if (latest?.revision !== response.revision) {
         setNotice(
-          "Hai modificato il foglio durante la richiesta. Chiedi un nuovo aiuto sui passaggi aggiornati.",
+          "Your writing changed during the request. Ask for a new review of the updated steps.",
         );
         return;
       }
@@ -332,6 +378,19 @@ export default function App() {
           pageId,
           revision: response.revision,
           annotation: response.annotation,
+          observation: response.observation
+            ? {
+                id: uid(),
+                pageId,
+                revision: response.revision,
+                intent: requestedIntent,
+                hint: response.annotation.text,
+                summary: response.observation.summary,
+                outcome: response.observation.outcome,
+                createdAt: Date.now(),
+                mode: tutorMode,
+              }
+            : undefined,
         },
         targetNotebookId,
       );
@@ -342,18 +401,55 @@ export default function App() {
     } catch (error) {
       if (controller.signal.aborted) {
         if (controller.signal.reason === "timeout")
-          setNotice("Il tutor sta impiegando troppo tempo. Puoi riprovare.");
+          setNotice("The tutor is taking too long. You can try again.");
       } else
         setNotice(
           error instanceof Error
             ? error.message
-            : "Qualcosa non ha funzionato. Riprova.",
+            : "Something went wrong. Please try again.",
         );
     } finally {
       clearTimeout(timeout);
       setBusy(false);
       requestRef.current = null;
     }
+  };
+  const attachMaterial = async (material: Material, attached: boolean) => {
+    if (!entry || indexing) return;
+    const notebookId = entry.id;
+    if (attached && (entry.materialIds?.length ?? 0) >= 6) {
+      setNotice("Choose up to six documents per notebook.");
+      return;
+    }
+    if (attached && material.textPages === undefined) {
+      setIndexing(material.id);
+      try {
+        const pages = await extractMaterialText(material);
+        dispatch({ type: "material-text", id: material.id, pages });
+        if (!pages.some((text) => text.trim())) {
+          setNotice(
+            "No searchable text found. You can still view this file or import it as an exercise.",
+          );
+          return;
+        }
+      } catch (error) {
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : "Couldn't read this document. Try again.",
+        );
+        return;
+      } finally {
+        setIndexing(null);
+      }
+    }
+    if (attached && material.textPages?.every((text) => !text.trim())) return;
+    dispatch({
+      type: "attach-material",
+      notebookId,
+      materialId: material.id,
+      attached,
+    });
   };
   const importFile = async (file: File | undefined, targetId = activeId) => {
     if (!file || !targetId || importing) return;
@@ -372,7 +468,7 @@ export default function App() {
       setNotice(
         error instanceof Error
           ? error.message
-          : "Non riesco ad aprire il documento.",
+          : "Could not open this document.",
       );
     } finally {
       setImporting(false);
@@ -381,9 +477,7 @@ export default function App() {
   };
   const upload = async (file: File, subject: string) => {
     if (storageBlocked || importing) {
-      setNotice(
-        "Il salvataggio non è disponibile. Ricarica prima di caricare materiali.",
-      );
+      setNotice("Storage is unavailable. Reload before adding material.");
       return;
     }
     if (
@@ -392,7 +486,7 @@ export default function App() {
         file.type,
       )
     ) {
-      setNotice("Scegli un PDF, PNG, JPG o WebP fino a 20 MB.");
+      setNotice("Choose a PDF, PNG, JPG or WebP up to 20 MB.");
       return;
     }
     setImporting(true);
@@ -412,7 +506,7 @@ export default function App() {
       });
     } catch {
       setNotice(
-        "Non riesco a conservare questo materiale. Controlla lo spazio disponibile e riprova.",
+        "Could not store this material. Check the available space and try again.",
       );
     } finally {
       setImporting(false);
@@ -421,16 +515,9 @@ export default function App() {
   const download = async (m: Material) => {
     try {
       const blob = await loadMaterial(m.id);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = m.name;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      downloadBlob(blob, m.name);
     } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "File non disponibile.",
-      );
+      setNotice(error instanceof Error ? error.message : "File unavailable.");
     }
   };
   const useMaterial = async (m: Material, id: string) => {
@@ -438,9 +525,7 @@ export default function App() {
       const blob = await loadMaterial(m.id);
       await importFile(new File([blob], m.name, { type: m.type }), id);
     } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "File non disponibile.",
-      );
+      setNotice(error instanceof Error ? error.message : "File unavailable.");
     }
   };
   const removeMaterial = async (m: Material) => {
@@ -456,30 +541,25 @@ export default function App() {
       dispatch({ type: "remove-material", id: m.id });
       await deleteMaterial(m.id);
     } catch {
-      setNotice("Non riesco a eliminare il materiale. Riprova.");
+      setNotice("Could not delete this material. Please try again.");
     }
   };
   const exportPage = () => {
     try {
       const image = page && canvasRefs.current.get(page.id)?.snapshot();
       if (!image) return;
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = `${page?.title || "esercizio"}.png`;
-      link.click();
+      downloadPng(image, `${page?.title || "exercise"}.png`);
     } catch {
-      setNotice("Non riesco a esportare il foglio. Riprova.");
+      setNotice("Could not export this page. Please try again.");
     }
   };
 
   if (!ready)
     return (
       <div className="loading-screen">
-        <span className="wordmark">
-          margine<span>.</span>
-        </span>
+        <span className="wordmark">margin</span>
         <LoaderCircle className="spin" size={20} />
-        <p>Apro il tuo spazio di studio…</p>
+        <p>Opening your study space…</p>
       </div>
     );
   return (
@@ -489,7 +569,7 @@ export default function App() {
           {entry ? (
             <button
               className="icon-button back-home"
-              aria-label="Torna alla biblioteca"
+              aria-label="Back to library"
               onClick={goHome}
             >
               <ArrowLeft size={20} />
@@ -497,13 +577,13 @@ export default function App() {
           ) : null}
           <button
             className="wordmark"
-            aria-label="Margine, biblioteca"
+            aria-label="margin, library"
             onClick={goHome}
           >
-            margine<span>.</span>
+            margin
           </button>
           {!entry ? (
-            <span className="edition">IL PIACERE DI CAPIRE.</span>
+            <span className="edition">WRITE. THINK. UNDERSTAND.</span>
           ) : null}
         </div>
         {notebook && entry ? (
@@ -513,7 +593,7 @@ export default function App() {
               <span>/</span>
             </span>
             <input
-              aria-label="Nome del quaderno"
+              aria-label="Notebook name"
               value={notebook.title}
               maxLength={80}
               onChange={(e) => edit({ type: "title", title: e.target.value })}
@@ -522,25 +602,46 @@ export default function App() {
         ) : null}
         <div className="header-actions">
           <span
-            className={`save-state ${storageBlocked || saveStatus.includes("riuscito") ? "save-error" : ""}`}
+            className={`save-state ${storageBlocked || saveStatus.startsWith("Could") ? "save-error" : ""}`}
             role="status"
           >
-            {saveStatus.startsWith("Salvato") ? <Check size={13} /> : null}
-            {storageBlocked ? "Salvataggio non disponibile" : saveStatus}
+            {saveStatus.startsWith("Saved") ? <Check size={13} /> : null}
+            {storageBlocked ? "Storage unavailable" : saveStatus}
           </span>
           {entry ? (
             <>
               <button
+                className={`icon-button ${panel === "materials" ? "selected" : ""}`}
+                aria-label="Course material"
+                title="Course material"
+                aria-expanded={panel === "materials"}
+                onClick={() => {
+                  setSourceView(null);
+                  setPanel(panel === "materials" ? null : "materials");
+                }}
+              >
+                <BookOpen size={18} />
+              </button>
+              <button
+                className={`icon-button ${panel === "session" ? "selected" : ""}`}
+                aria-label="Learning notes"
+                title="Learning notes"
+                aria-expanded={panel === "session"}
+                onClick={() => setPanel(panel === "session" ? null : "session")}
+              >
+                <History size={18} />
+              </button>
+              <button
                 className="icon-button"
-                aria-label="Esporta foglio PNG"
-                title="Esporta foglio PNG"
+                aria-label="Export page as PNG"
+                title="Export page as PNG"
                 onClick={exportPage}
               >
                 <ArrowDownToLine size={18} />
               </button>
               <button
                 className="button button-outline"
-                aria-label="Importa esercizio"
+                aria-label="Import exercise"
                 onClick={() => importRef.current?.click()}
                 disabled={importing}
               >
@@ -550,12 +651,12 @@ export default function App() {
                   <FileUp size={16} />
                 )}
                 <span className="import-label">
-                  {importing ? "Importazione…" : "Importa esercizio"}
+                  {importing ? "Importing…" : "Import exercise"}
                 </span>
               </button>
             </>
           ) : (
-            <span className="header-library-label">La tua biblioteca</span>
+            <span className="header-library-label">Your library</span>
           )}
         </div>
         <input
@@ -571,7 +672,7 @@ export default function App() {
           <span>{notice}</span>
           <button
             className="icon-button"
-            aria-label="Chiudi messaggio"
+            aria-label="Dismiss message"
             onClick={() => setNotice("")}
           >
             <X size={15} />
@@ -594,11 +695,7 @@ export default function App() {
       ) : (
         <main className="notebook-workspace">
           <div className="editor-tool-area">
-            <div
-              className="toolbar"
-              role="toolbar"
-              aria-label="Strumenti del quaderno"
-            >
+            <div className="toolbar" role="toolbar" aria-label="Notebook tools">
               <div className="tool-group">
                 {tools.map(({ id, label, key, icon: Icon }) => (
                   <button
@@ -617,7 +714,7 @@ export default function App() {
               <div className="history-tools">
                 <button
                   className="icon-button"
-                  aria-label="Annulla"
+                  aria-label="Undo"
                   disabled={!history?.past.length}
                   onClick={() => edit({ type: "undo", pageId: page.id })}
                 >
@@ -625,7 +722,7 @@ export default function App() {
                 </button>
                 <button
                   className="icon-button"
-                  aria-label="Ripristina"
+                  aria-label="Redo"
                   disabled={!history?.future.length}
                   onClick={() => edit({ type: "redo", pageId: page.id })}
                 >
@@ -635,7 +732,7 @@ export default function App() {
               <span className="toolbar-divider" />
               <button
                 className={`icon-button ${optionsOpen ? "selected" : ""}`}
-                aria-label="Opzioni di scrittura"
+                aria-label="Writing options"
                 aria-expanded={optionsOpen}
                 onClick={() => setOptionsOpen(!optionsOpen)}
               >
@@ -643,17 +740,17 @@ export default function App() {
               </button>
               <button
                 className={`tool-button tutor-tool ${composerPage ? "selected" : ""}`}
-                aria-label="Chiedi aiuto sul foglio"
+                aria-label="Ask for help on this page"
                 onClick={() => setComposerPage(composerPage ? null : page.id)}
               >
                 <Sparkles size={17} />
-                <span>Aiuto AI</span>
+                <span>Ask margin</span>
               </button>
             </div>
             <span className="editor-instruction">
               {tool === "select"
-                ? "Seleziona un passaggio. L’aiuto compare lì accanto."
-                : "Scrivi, seleziona un dubbio, continua a ragionare."}
+                ? "Select a step. The guidance appears beside it."
+                : "Write. Select a step. Keep thinking."}
             </span>
             {optionsOpen ? (
               <div className="writing-options">
@@ -663,7 +760,7 @@ export default function App() {
                       key={c}
                       style={{ "--ink": c } as React.CSSProperties}
                       className={`color-button ${c === color ? "chosen" : ""}`}
-                      aria-label={`Inchiostro ${["blu scuro", "verde", "terracotta"][i]}`}
+                      aria-label={`Ink ${["deep green", "sage", "terracotta"][i]}`}
                       aria-pressed={c === color}
                       onClick={() => {
                         setColor(c);
@@ -673,21 +770,21 @@ export default function App() {
                   ))}
                 </div>
                 <label>
-                  Tratto
+                  Stroke
                   <select
-                    aria-label="Spessore penna"
+                    aria-label="Pen width"
                     value={penWidth}
                     onChange={(e) => setPenWidth(Number(e.target.value))}
                   >
                     <option value={1.5}>Fine</option>
-                    <option value={2.5}>Medio</option>
-                    <option value={4}>Spesso</option>
+                    <option value={2.5}>Medium</option>
+                    <option value={4}>Bold</option>
                   </select>
                 </label>
                 <label>
-                  Carta
+                  Paper
                   <select
-                    aria-label="Tipo di foglio"
+                    aria-label="Paper type"
                     value={page.paper}
                     onChange={(e) =>
                       edit({
@@ -697,18 +794,14 @@ export default function App() {
                       })
                     }
                   >
-                    <option value="dots">Puntinata</option>
-                    <option value="lines">A righe</option>
-                    <option value="plain">Bianca</option>
+                    <option value="dots">Dotted</option>
+                    <option value="lines">Lined</option>
+                    <option value="plain">Plain</option>
                   </select>
                 </label>
                 <button
                   className="icon-button"
-                  aria-label={
-                    annotationsVisible
-                      ? "Nascondi annotazioni"
-                      : "Mostra annotazioni"
-                  }
+                  aria-label={annotationsVisible ? "Hide hints" : "Show hints"}
                   onClick={() => setAnnotationsVisible(!annotationsVisible)}
                 >
                   {annotationsVisible ? (
@@ -719,7 +812,7 @@ export default function App() {
                 </button>
                 <button
                   className="icon-button"
-                  aria-label="Svuota i tratti"
+                  aria-label="Clear handwriting"
                   disabled={!page.strokes.length}
                   onClick={() =>
                     edit({ type: "clear-strokes", pageId: page.id })
@@ -763,7 +856,14 @@ export default function App() {
                   onStroke={(stroke) =>
                     edit({ type: "stroke", pageId: p.id, stroke })
                   }
-                  onHelp={(region) => void help(p.id, region)}
+                  onHelp={(region, nextIntent) =>
+                    void help(p.id, region, nextIntent)
+                  }
+                  onSource={(ref) => {
+                    setSourceView(ref);
+                    setPanel("materials");
+                  }}
+                  materials={library.materials}
                   onCompose={() => {
                     edit({ type: "activate", id: p.id });
                     setComposerPage(p.id);
@@ -791,13 +891,13 @@ export default function App() {
                         }}
                         onSubmit={(e) => {
                           e.preventDefault();
-                          void help(p.id);
+                          void help(p.id, undefined, intent);
                         }}
                       >
                         <div className="composer-heading">
                           <span>
                             <Sparkles size={15} />
-                            Nel margine{" "}
+                            In the margin{" "}
                             <small>
                               {tutorMode === "demo" ? "DEMO" : "AI"}
                             </small>
@@ -805,35 +905,33 @@ export default function App() {
                           <button
                             type="button"
                             className="icon-button"
-                            aria-label="Chiudi aiuto"
+                            aria-label="Close help"
                             onClick={() => setComposerPage(null)}
                           >
                             <X size={17} />
                           </button>
                         </div>
                         <label htmlFor="tutor-question">
-                          Un dubbio su questo{" "}
-                          {selection?.pageId === p.id ? "passaggio" : "foglio"}?
+                          A question about this{" "}
+                          {selection?.pageId === p.id ? "step" : "page"}?
                         </label>
                         <select
-                          aria-label="Tipo di aiuto"
+                          aria-label="Type of help"
                           value={intent}
-                          onChange={(e) => setIntent(e.target.value)}
+                          onChange={(e) =>
+                            setIntent(e.target.value as typeof intent)
+                          }
                         >
-                          {[
-                            "Un indizio",
-                            "Spiega il passaggio",
-                            "Controlla il tentativo",
-                          ].map((value) => (
-                            <option key={value}>{value}</option>
-                          ))}
+                          <option value="hint">Give me a hint</option>
+                          <option value="explain">Explain this step</option>
+                          <option value="check">Check my update</option>
                         </select>
                         <textarea
                           autoFocus
                           id="tutor-question"
                           value={question}
                           onChange={(e) => setQuestion(e.target.value)}
-                          placeholder="Aggiungi una domanda (facoltativo)"
+                          placeholder="Add a question (optional)"
                           rows={2}
                           maxLength={1000}
                         />
@@ -847,12 +945,18 @@ export default function App() {
                           ) : (
                             <ArrowRight size={16} />
                           )}
-                          {busy ? "Preparo un indizio…" : "Chiedi un indizio"}
+                          {busy
+                            ? "Looking at your page…"
+                            : intent === "check"
+                              ? "Check my update"
+                              : intent === "explain"
+                                ? "Explain this step"
+                                : "Give me a hint"}
                         </button>
                         <small>
                           {tutorMode === "demo"
-                            ? "Indizi predefiniti. Nessuna analisi AI del foglio."
-                            : "Consegna e tratti saranno inviati al servizio AI."}
+                            ? "Scripted hints. This demo does not analyse your page."
+                            : "Your page and text excerpts from selected course material will be sent to the AI service."}
                         </small>
                       </form>
                     ) : null
@@ -861,17 +965,57 @@ export default function App() {
               ))}
               <button className="add-sheet" onClick={addPage}>
                 <Plus size={20} />
-                <span>Aggiungi un foglio</span>
+                <span>Add a page</span>
               </button>
-              <p className="below-paper">Lo spazio per arrivarci resta tuo.</p>
+              <p className="below-paper">Room to find your own way.</p>
             </div>
           </div>
+          {panel === "materials" ? (
+            <CourseMaterialPanel
+              materials={library.materials.filter(
+                (m) => m.subjectId === entry.subjectId,
+              )}
+              attachedIds={entry.materialIds ?? []}
+              indexing={indexing}
+              sourceView={sourceView}
+              onAttach={(m, attached) => void attachMaterial(m, attached)}
+              onUpload={(file) => void upload(file, entry.subjectId)}
+              uploading={importing}
+              onClose={() => setPanel(null)}
+            />
+          ) : null}
+          {panel === "session" ? (
+            <SessionPanel
+              notebook={notebook}
+              busy={busy}
+              onClose={() => setPanel(null)}
+              onEdit={(id, summary) =>
+                edit({ type: "edit-observation", id, summary })
+              }
+              onClear={() => edit({ type: "clear-observations" })}
+              onReview={(id) => {
+                edit({ type: "activate", id });
+                setPanel(null);
+                setIntent("check");
+                setComposerPage(id);
+                const target = Array.from(
+                  viewportRef.current?.querySelectorAll<HTMLElement>(
+                    "[data-page-id]",
+                  ) ?? [],
+                ).find((el) => el.dataset.pageId === id);
+                if (target)
+                  viewportRef.current?.scrollTo({
+                    top: target.offsetTop - 120,
+                  });
+              }}
+            />
+          ) : null}
           {busy ? (
             <div className="request-status" role="status">
               <LoaderCircle size={16} className="spin" />
-              Preparo un indizio sul foglio…
+              Preparing guidance for your page…
               <button onClick={() => requestRef.current?.abort()}>
-                Annulla
+                Cancel
               </button>
             </div>
           ) : null}
@@ -882,16 +1026,16 @@ export default function App() {
                 checked={penOnly}
                 onChange={(e) => setPenOnly(e.target.checked)}
               />
-              Solo penna<span className="desktop-hint"> · il dito scorre</span>
+              Pen only<span className="desktop-hint"> · finger to pan</span>
             </label>
             <span className="demo-status">
               {tutorMode === "demo"
-                ? "Tutor demo · indizi predefiniti"
-                : "Tutor AI collegato"}
+                ? "Demo tutor · scripted hints"
+                : "AI tutor · on request"}
             </span>
             <div className="footer-navigation">
               <select
-                aria-label="Vai al foglio"
+                aria-label="Go to page"
                 value={page.id}
                 onChange={(e) => {
                   const target = Array.from(
@@ -908,7 +1052,7 @@ export default function App() {
               >
                 {notebook.pages.map((p, i) => (
                   <option key={p.id} value={p.id}>
-                    Foglio {i + 1} di {notebook.pages.length}
+                    Page {i + 1} of {notebook.pages.length}
                   </option>
                 ))}
               </select>
@@ -916,7 +1060,7 @@ export default function App() {
               <div className="zoom-controls">
                 <button
                   className="icon-button"
-                  aria-label="Riduci zoom"
+                  aria-label="Zoom out"
                   disabled={zoom <= 0.6}
                   onClick={() => setZoom((z) => Math.max(0.6, z - 0.2))}
                 >
@@ -924,14 +1068,14 @@ export default function App() {
                 </button>
                 <button
                   className="zoom-value"
-                  aria-label="Adatta foglio alla finestra"
+                  aria-label="Fit page"
                   onClick={() => setZoom(1)}
                 >
                   {Math.round(scale * 100)}%
                 </button>
                 <button
                   className="icon-button"
-                  aria-label="Aumenta zoom"
+                  aria-label="Zoom in"
                   disabled={zoom >= 2.4}
                   onClick={() => setZoom((z) => Math.min(2.4, z + 0.2))}
                 >

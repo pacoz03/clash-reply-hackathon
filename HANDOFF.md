@@ -1,3 +1,37 @@
+# Handoff — margin
+
+Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
+
+## Implementazione delle cinque feature concordate
+
+L'utente ha approvato il brand `margin`, UI in inglese e le cinque feature: quaderni/importazione, scrittura, tutor contestuale, nuovo tentativo/memoria, dispense/fonti. Ha chiesto di analizzare prima il codice esistente. Branch attivo osservato: `gian`. La cartella `output/` conteneva mockup preesistenti non tracciati; non è inclusa nella pubblicazione del codice.
+
+La base già implementava biblioteca per materia, materiali originali, pagine continue, selezione e aiuti nel margine. Queste scelte sono preservate: nessuna sidebar tutor fissa ripristinata dai mockup.
+
+Aggiunti:
+- Branding margin, payoff inglese, testi e messaggi UI inglesi. Database conserva il nome `margine-notebook` per compatibilità e non traduce contenuti dell'utente già salvati.
+- Intenti hint/explain/check distinti. Note legate alla revisione mostrano quando la scrittura è cambiata. Le note demo mantengono la propria provenienza anche se cambia la configurazione del tutor.
+- Osservazioni atomiche con la risposta corrente; Learning notes modificabile e cancellabile separatamente dai tratti; contesto limitato al quaderno/pagina. Risposte obsolete non scrivono né indizi né memoria.
+- Allegati selezionati per quaderno, estrazione testo PDF locale, recupero lessicale limitato, lettore paginato di PDF/immagini. Citazioni strutturate controllate per documento, pagina e testo sia server sia client; apertura della fonte alla pagina citata.
+- Backend FastAPI stateless in backend/app.py: image input e Structured Outputs via SDK OpenAI diretto, CORS espliciti, limiti input, ancoraggio alla selezione e istruzioni pedagogiche. Nessuna chiave e nessun modello di default. Il frontend resta demo salvo configurazione esplicita.
+- Download tramite Blob URL, link temporaneamente nel DOM e revoca differita.
+
+Campi aggiuntivi opzionali degli schemi versione 1; IndexedDB resta versione 2. Contratto backend compatibile con i campi precedenti ed esteso con pageHeight, notebookId, intent, observations e sources. Configurazione in README.md; direzione visiva in DESIGN.md.
+
+## Limiti da mantenere espliciti
+
+Non è stata eseguita una chiamata a un modello reale: manca OPENAI_API_KEY e non è stato selezionato OPENAI_MODEL. La demo non legge né verifica il foglio e non produce esiti di progresso AI. Prima della demo della challenge servono modelli confrontati su scrittura reale, materiale universitario autorizzato e controlli umani sui risultati.
+
+Fonti: massimo sei documenti selezionati, PDF testuali fino a 100 pagine, otto estratti di 2.800 caratteri per richiesta. Nessun OCR o retrieval vettoriale; la ricerca usa titolo, domanda e aiuti precedenti, quindi può non trovare il materiale pertinente. Le immagini restano consultabili e importabili come esercizi. La validazione della citazione prova la corrispondenza testuale, non la correttezza matematica o la pertinenza.
+
+Nessuna verifica simbolica, account, sync, autenticazione pubblica, pinch zoom o palm rejection avanzata. I pannelli sono temporanei e richiudibili. Apple Pencil va provata su hardware reale. Il backend non conserva pagine o conversazioni; store=False non sostituisce una politica sulla conservazione presso il provider.
+
+Le verifiche aggiornate sono in docs/VERIFICA.md. Il precedente handoff sotto è conservato come storia e non descrive tutte le nuove feature.
+
+---
+
+## Contesto storico della revisione precedente
+
 # Handoff — Margine
 
 Aggiornato: 7 novembre 2026, fuso Europe/Rome.

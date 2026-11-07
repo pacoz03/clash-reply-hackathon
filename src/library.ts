@@ -19,6 +19,7 @@ const entrySchema = z.object({
   subjectId: z.string(),
   updatedAt: z.number(),
   notebook: notebookSchema,
+  materialIds: z.array(z.string()).optional(),
 });
 const materialSchema = z.object({
   id: z.string(),
@@ -27,6 +28,7 @@ const materialSchema = z.object({
   size: z.number(),
   type: z.string(),
   addedAt: z.number(),
+  textPages: z.array(z.string().max(30000)).max(100).optional(),
 });
 export const librarySchema = z.object({
   schemaVersion: z.literal(1),
@@ -41,7 +43,7 @@ export function createLibrary(legacy?: Notebook | null): Library {
   const subjectId = uid();
   return {
     schemaVersion: 1,
-    subjects: [{ id: subjectId, name: "Analisi matematica" }],
+    subjects: [{ id: subjectId, name: "My studies" }],
     notebooks: [
       {
         id: uid(),
@@ -64,6 +66,13 @@ export type LibraryAction =
   | { type: "delete-notebook"; id: string }
   | { type: "add-material"; material: Material }
   | { type: "remove-material"; id: string }
+  | { type: "material-text"; id: string; pages: string[] }
+  | {
+      type: "attach-material";
+      notebookId: string;
+      materialId: string;
+      attached: boolean;
+    }
   | { type: "edit"; notebookId: string; action: EditorAction };
 export function libraryReducer(
   state: LibraryState,
@@ -128,8 +137,39 @@ export function libraryReducer(
       library: {
         ...library,
         materials: library.materials.filter((m) => m.id !== action.id),
+        notebooks: library.notebooks.map((n) => ({
+          ...n,
+          materialIds: n.materialIds?.filter((id) => id !== action.id),
+        })),
       },
     };
+  if (action.type === "material-text")
+    return {
+      ...state,
+      library: {
+        ...library,
+        materials: library.materials.map((m) =>
+          m.id === action.id ? { ...m, textPages: action.pages } : m,
+        ),
+      },
+    };
+  if (action.type === "attach-material") {
+    const material = library.materials.find((m) => m.id === action.materialId);
+    return {
+      ...state,
+      library: {
+        ...library,
+        notebooks: library.notebooks.map((n) => {
+          if (n.id !== action.notebookId || material?.subjectId !== n.subjectId)
+            return n;
+          const ids = new Set(n.materialIds ?? []);
+          if (action.attached) ids.add(action.materialId);
+          else ids.delete(action.materialId);
+          return { ...n, materialIds: [...ids] };
+        }),
+      },
+    };
+  }
   const entry = library.notebooks.find((n) => n.id === action.notebookId);
   if (!entry) return state;
   const edited = editorReducer(

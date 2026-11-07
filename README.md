@@ -1,118 +1,125 @@
-# Margine
+# margin
 
-Prototipo di una biblioteca e di un quaderno web per esercizi matematici e fisici, progettato per iPad e penna. React, TypeScript, Vite, Konva e PDF.js. Il tutor parte in **modalità demo locale**: gli indizi sono predefiniti e non analizzano il contenuto del foglio.
+**Write. Think. Understand.**  
+AI guidance, right beside your notes.
 
-## Avvio
+Quaderno web per esercizi matematici e fisici su iPad con penna. React 19, TypeScript, Vite, Konva, PDF.js e IndexedDB; backend Python/FastAPI con SDK OpenAI diretto.
 
-Richiede Node.js 22.13+ e npm.
+## Avvio frontend
+
+Node.js 22.13+ e npm:
 
 ```sh
 npm install
 npm run dev
+npm test
+npm run build
 ```
 
-Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173`. Per provare da iPad sulla stessa rete, usa l'indirizzo Network stampato da Vite. Per test affidabili in produzione usa HTTPS.
+Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173`. La UI è in inglese. Per provare da un altro dispositivo sulla stessa rete usa l'indirizzo Network mostrato da Vite; i quaderni sono locali al browser e all'origine, non sincronizzati. Le prove affidabili su iPad richiedono HTTPS e un dispositivo reale.
+
+## Le cinque feature
+
+1. **Quaderni e importazione.** Biblioteca per materia, ricerca, quaderni multipli, pagine continue; PDF o immagini importati come fogli scrivibili. Originali dei materiali conservati separatamente.
+2. **Scrittura.** Penna, gomma, undo/redo per pagina, selezione, spostamento, zoom, carta puntinata/a righe/bianca, salvataggio locale automatico ed esportazione PNG senza aiuti.
+3. **Tutor nel margine.** Seleziona un passaggio e premi Ask margin, oppure chiedi aiuto sull'intera pagina. Indizi progressivi, note collegate al punto selezionato, comprimibili, nascondibili e rimovibili; nessuna sidebar tutor permanente.
+4. **Nuovo tentativo e memoria.** Check my update richiede una lettura dello svolgimento corrente. Learning notes conserva osservazione, aiuto, versione, intento ed esito; le osservazioni si possono modificare o cancellare senza alterare il foglio. Le note riferite a scrittura precedente sono segnalate.
+5. **Fonti del corso.** Course material consente di scegliere fino a sei PDF della materia per il quaderno. Estrazione testuale locale e selezione di estratti; una citazione verificata apre il documento alla pagina usata con il passaggio citato.
+
+Il primo quaderno contiene un esempio illustrativo sulla regola della catena, con passaggio volutamente incompleto. I nuovi quaderni partono vuoti. Non sono inclusi materiali universitari autentici.
+
+## Modalità demo e AI reale
+
+Senza `VITE_TUTOR_API_URL`, il tutor è una **demo locale dichiarata**. Non legge il foglio, non usa le dispense, non verifica formule e non può registrare progressi valutati da AI. Anche Check my update resta dimostrativo. Le interazioni demo sono etichettate e tenute distinte nel contesto successivo.
+
+Il backend reale è implementato, ma richiede una chiave server e la scelta esplicita di un modello vision compatibile con Responses e Structured Outputs. Non è impostato un modello predefinito: confrontare lettura della scrittura, utilità degli indizi, latenza e costo sui casi reali prima di sceglierlo.
+
+### Avvio backend
+
+Python 3.11+:
 
 ```sh
-npm run build
-npm test
-npm run preview
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements-dev.txt
+cp backend/.env.example backend/.env
 ```
 
-## Funzioni disponibili
+Compila `OPENAI_API_KEY` e `OPENAI_MODEL` in `backend/.env`, poi carica queste variabili nella shell del server:
 
-- Scrittura a mano con mouse o penna, tre colori e tre spessori.
-- Gomma, annulla/ripristina (50 passaggi per pagina, durante la sessione).
-- Biblioteca con materie, più quaderni per materia, ricerca, creazione ed eliminazione dei quaderni con conferma.
-- Materiali PDF e immagini per materia: originali salvati, scaricabili e importabili nei quaderni.
-- Selezione rettangolare con pulsante **Aiuto AI** accanto al passaggio. Un clic richiede un indizio; il fumetto permette di aggiungere una domanda.
-- Annotazioni tutor in un livello separato, collegate alla selezione, comprimibili e rimovibili.
-- Fogli multipli a scorrimento verticale continuo, sfondo puntinato/a righe/bianco, zoom e trascinamento. Il selettore nel footer porta a un foglio senza cambiare vista.
-- Importazione PDF multipagina e immagini PNG/JPEG/WebP, fino a 20 MB e 20 pagine PDF.
-- Salvataggio automatico della biblioteca in IndexedDB sul dispositivo, con migrazione del precedente quaderno singolo.
-- Esportazione PNG della consegna e dello svolgimento, senza il livello tutor.
-- Flusso tutor dimostrativo, annullamento richieste e protezione contro risposte relative a versioni precedenti del foglio.
-- Notebook senza sidebar: strumenti flottanti, domanda sul foglio e indizi nel margine. Sui formati compatti gli indizi si sovrappongono al foglio e si possono comprimere.
-
-La biblioteca iniziale contiene un quaderno dimostrativo nella materia Analisi matematica. Le materie organizzano i file, non limitano gli esercizi supportati. I nuovi quaderni partono da un foglio vuoto; **Importa esercizio** aggiunge PDF o immagini come nuovi fogli. **Carica materiale**, nella home, conserva invece il file originale nella materia. **Usa in un quaderno** ne importa una copia scrivibile. I materiali non vengono ancora consultati dal tutor.
-
-Il primo foglio della demo è un esempio illustrativo con un passaggio volutamente incompleto. Aggiungi un foglio vuoto per lavorare su un esercizio tuo. I contenuti dell'esempio non sono materiale universitario autentico.
-
-## Input e scorciatoie
-
-- `P`: penna; `E`: gomma; `S`: selezione; `H`: spostamento.
-- `⌘/Ctrl + Z`: annulla; `⌘/Ctrl + Shift + Z`: ripristina.
-- `Esc`: rimuove la selezione e chiude domanda e opzioni di scrittura.
-- Il pulsante con i cursori mostra colori, spessore, carta, visibilità degli indizi e svuotamento reversibile dei tratti.
-- **Aiuto AI** nella toolbar apre una domanda relativa al foglio attivo; le richieste sono sempre esplicite.
-- Con **Solo penna**, i tratti accettano penna o mouse; il dito sposta il foglio. Disattivalo per disegnare col dito.
-- Lo zoom usa i pulsanti `−`/`+`; premendo la percentuale il foglio si adatta alla finestra. Il pinch zoom del canvas non è implementato.
-
-La pressione della penna e il rifiuto avanzato del palmo non sono implementati. Va verificato il comportamento sul modello reale di iPad/Apple Pencil destinato alla demo.
-
-## Architettura
-
-```text
-src/
-  App.tsx                    shell e coordinamento delle interazioni
-  model.ts                   modello del quaderno versionato, reducer, cronologia
-  library.ts                 biblioteca versionata, materie e quaderni
-  note-layout.ts             disposizione degli indizi senza sovrapposizioni
-  components/
-    NotebookCanvas.tsx       foglio a livelli e input Pointer Events
-    PageSurface.tsx          fogli continui, selezione e indizi HTML accessibili
-    LibraryHome.tsx          materie, quaderni e materiali
-  services/
-    storage.ts               persistenza IndexedDB serializzata
-    import.ts                rendering PDF e immagini, caricato su richiesta
-    tutor.ts                 contratto API, validazione Zod, adattatore demo
+```sh
+set -a
+source backend/.env
+set +a
+python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
 ```
 
-Le coordinate sono sempre relative alla pagina logica larga 794 unità. Lo zoom riguarda la visualizzazione. I tratti provvisori vengono disegnati direttamente sul livello Konva e arrivano allo stato React soltanto alla fine del gesto.
+In un altro terminale, copia `.env.example` in `.env.local` e imposta:
 
-I PDF importati nei quaderni vengono rasterizzati per la scrittura: non è ancora presente estrazione testuale, ricerca nei documenti o RAG. I file caricati nei materiali conservano invece il proprio originale. Lo storico undo non viene conservato dopo reload. I canvas lontani dalla porzione visibile vengono smontati e ricreati dai dati salvati quando tornano vicini.
+```dotenv
+VITE_TUTOR_API_URL=/api
+```
 
-IndexedDB passa alla versione 2 mantenendo lo store `notebooks` e aggiungendo `materials` per i Blob originali. La chiave `library` contiene una biblioteca con schema versione 1 che incapsula quaderni con schema versione 1, invariato. In assenza della biblioteca, la chiave precedente `current` viene validata e migrata senza cancellare l’originale. Dati non leggibili bloccano la sovrascrittura automatica. Tutte le scritture rimangono serializzate.
+Riavvia Vite. Il proxy di sviluppo inoltra `/api/tutor/help` al backend locale senza esporre la chiave al browser. In produzione configurare lo stesso reverse proxy oppure l'origine HTTPS del backend con i relativi CORS. `GET /health` indica se chiave e modello sono configurati; il servizio restituisce 503 se mancano, senza simulare una risposta AI.
 
-## Collegare il backend AI
+**Mai inserire chiavi private in variabili `VITE_*`.**
 
-Copia `.env.example` in `.env.local` e imposta `VITE_TUTOR_API_URL` con l'origine del backend. Riavvia Vite. La modalità demo viene sostituita dalla chiamata HTTP e l'interfaccia lo segnala. Nessuna chiave privata deve essere inserita in variabili `VITE_*`.
+### Contratto tutor
 
-Il backend dovrà implementare `POST /tutor/help` e consentire l'origine del frontend tramite CORS. La richiesta contiene:
+`POST /tutor/help` accetta il contratto precedente, con campi opzionali aggiuntivi:
 
 ```json
 {
+  "notebookId": "notebook-id",
   "pageId": "page-id",
   "revision": 3,
+  "pageHeight": 1123,
   "image": "data:image/png;base64,...",
   "selection": { "x": 60, "y": 355, "width": 420, "height": 70 },
-  "question": "Un indizio. Perché questo passaggio non torna?",
-  "previousHints": []
+  "question": "Why does this step not work?",
+  "intent": "hint",
+  "previousHints": [],
+  "observations": [],
+  "sources": []
 }
 ```
 
-`selection` può essere `null`. `image` include consegna e tratti, escludendo selezione e annotazioni del tutor. La risposta deve rispettare `tutorResponseSchema` in `src/services/tutor.ts`:
+`intent`: `hint`, `explain`, `check`. `selection` può essere null. Ogni fonte inviata include `materialId`, `name`, pagina reale `page` e `text`; ogni osservazione precedente contiene `summary`, `outcome` e `revision`.
 
-```json
-{
-  "pageId": "page-id",
-  "revision": 3,
-  "annotation": {
-    "id": "hint-id",
-    "kind": "question",
-    "anchor": { "x": 60, "y": 355, "width": 420, "height": 70 },
-    "text": "Quale regola giustifica questo passaggio?",
-    "source": "Dispensa, pagina 12"
-  }
-}
+La risposta mantiene pagina/revisione e contiene un'annotazione `hint` o `question`, più una breve osservazione. Un riferimento strutturato `sourceRef` contiene `materialId`, `page` e una citazione testuale `quote`. Frontend e backend controllano che documento, pagina ed estratto corrispondano ai materiali inviati; riferimenti inventati vengono scartati. Questo controlla la provenienza del testo, non certifica la pertinenza o la correttezza matematica della risposta.
+
+Il server usa l'immagine aggiornata, memoria esplicita e istruzioni per indizi progressivi, metodi alternativi e richieste di chiarimento. Il comportamento educativo e la correttezza richiedono comunque valutazione su casi reali. Non è implementato un verificatore simbolico universale.
+
+L'integrazione segue [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses) e [input immagini](https://developers.openai.com/api/docs/guides/images-vision?api-mode=responses) della documentazione ufficiale OpenAI.
+
+## Fonti: ambito attuale
+
+- PDF fino a 20 MB e 100 pagine per estrazione/consultazione; importazione come fogli scrivibili limitata a 20 pagine per file.
+- Il lettore mostra anche immagini. I PDF scansiti e le immagini non sono sottoposti a OCR: restano consultabili/importabili, ma non diventano fonti testuali del tutor.
+- La ricerca è lessicale e locale, basata su titolo, domanda e indizi precedenti. Invia al massimo otto estratti di 2.800 caratteri dai documenti selezionati; non usa embeddings e non trascrive il foglio prima del recupero. Può quindi non trovare il materiale pertinente.
+- Solo la richiesta esplicita di aiuto invia immagine e contesto. Nascondere o rimuovere una nota non modifica i tratti. Eliminare un materiale lo scollega dai quaderni.
+
+## Input e dati
+
+- `P` penna, `E` gomma, `S` selezione, `H` spostamento; `⌘/Ctrl+Z`, `⌘/Ctrl+Shift+Z`; `Esc` chiude aiuto e opzioni.
+- Pen only distingue penna/mouse dal dito per lo spostamento. Pinch zoom, pressione e palm rejection avanzata restano da implementare e provare su iPad.
+- Coordinate logiche: larghezza 794, altezza variabile; lo zoom è visivo. Il canvas aggiorna React alla fine del gesto, non a ogni campione.
+- IndexedDB `margine-notebook`, versione 2, conserva il proprio nome per compatibilità. Gli schemi Notebook/Library restano versione 1 con campi opzionali per memoria, allegati e testo dei PDF; i dati precedenti restano leggibili. La chiave legacy `current` è mantenuta come backup della migrazione. Dati non leggibili bloccano le sovrascritture.
+- Salvataggi serializzati; undo/redo conservato solo durante la sessione; osservazioni conservate con il quaderno fino alla cancellazione. Cambiare browser/origine non trasferisce la biblioteca.
+- Il backend non mantiene un database di pagine, dispense o conversazioni e richiede `store=False` al provider. Ciò non definisce da solo la conservazione dei dati del fornitore; configurazione e condizioni del provider vanno documentate prima di un rilascio pubblico. Il servizio locale non include autenticazione o limiti d'uso per un hosting pubblico.
+
+## Verifiche e mappa del progetto
+
+```sh
+npm test
+npm run build
+python -m pytest backend -q
 ```
 
-`source` è facoltativo e deve essere fornito solo quando verificato. `kind` ammette `hint` e `question`. Il frontend valida risposta, regione della pagina e versione dello svolgimento; non valuta la correttezza matematica. Il backend reale, le fonti del corso, la memoria delle difficoltà e il controllo matematico sono i prossimi moduli da implementare.
-
-## Dati e limiti
-
-In modalità demo tutto resta sul dispositivo. Il salvataggio è legato al browser e all'origine: aprire la stessa app su un altro dispositivo non trasferisce quaderni o materiali. La cancellazione dei dati del sito elimina la biblioteca. Usa l'esportazione PNG per conservare una copia dei fogli.
-
-Con un backend configurato, il foglio viene inviato solo quando si richiede aiuto. Autenticazione, limiti d'uso, conservazione sul server e gestione dei materiali devono essere aggiunti prima di un rilascio pubblico.
-
-I requisiti di prodotto completi sono in `REQUISITI.md`; questa versione è il boilerplate del notebook e non implementa ancora l'intero prodotto.
+- `src/model.ts`, `src/library.ts`: modelli, reducer e compatibilità.
+- `src/components/`: biblioteca, fogli continui, canvas, materiali e memoria.
+- `src/services/`: persistenza, import, download, recupero fonti e adapter tutor.
+- `backend/app.py`: API stateless, validazione e integrazione vision.
+- `DESIGN.md`: direzione visiva e vincoli dei mockup portati nel codice.
+- `docs/VERIFICA.md`: evidenze e limiti delle prove.
+- `HANDOFF.md`: stato corrente e contesto precedente.
