@@ -2,6 +2,27 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Diagnosi del 502 AI e sostituzione chiave
+
+7 novembre 2026, branch `gian`. Riprodotto il guasto con la sola immagine
+sintetica `gateway/Component-of-equation.png`, con autorizzazione esplicita
+dell'utente: OpenAI restituiva 401 `token_invalidated`. Dopo la sostituzione
+locale della chiave da parte dell'utente, la stessa chiamata al tutor ha
+restituito un indizio reale in 7,81 secondi. Nessun quaderno utente inviato.
+Il processo Uvicorn già aperto deve essere fermato, le variabili di `backend/.env`
+ricaricate e il server riavviato: modificare il file non aggiorna il processo.
+
+Gli errori di autenticazione ora producono un codice applicativo specifico e un
+messaggio operativo nel tutor; nei log solo indicazioni controllate o tipo
+d'errore, senza corpo dell'eccezione, chiavi, immagini o contenuti del provider.
+Anche l'endpoint voce segnala l'autenticazione nei log. README chiarisce avvio
+dalla radice, ricaricamento della configurazione e limiti di `/health`.
+Verificati 25 test backend, 48 frontend, build e diff check. Test di regressione
+per chiave invalidata senza esposizione di dati, messaggio client specifico e
+fallback sicuro per risposte sconosciute o non JSON. Nessuna modifica al canvas,
+agli schemi salvati o al modello scelto. Prova reale tramite `infer`; il processo
+Uvicorn dell'utente non è stato riavviato da questa sessione.
+
 ## Presentazione HTML per il pitch
 
 7 novembre 2026, branch `gian`. Creato `public/pitch.html`: otto slide in inglese

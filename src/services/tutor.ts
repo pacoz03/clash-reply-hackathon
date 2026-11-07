@@ -49,12 +49,20 @@ export async function requestTutor(
         signal,
       },
     );
-    if (!response.ok)
+    if (!response.ok) {
+      const error = z.object({
+        detail: z.object({ code: z.literal("provider_authentication_failed") }),
+      }).safeParse(await response.json().catch(() => null));
+      if (error.success)
+        throw new Error(
+          "AI authentication failed. Update the server API key and restart the backend. Your writing is safe.",
+        );
       throw new Error(
         response.status === 503
           ? "The tutor is not configured yet. Your writing is safe on this device."
           : "The tutor is unavailable. Your writing is safe: please try again.",
       );
+    }
     const result = tutorResponseSchema.parse(await response.json());
     if (
       result.pageId !== request.pageId ||

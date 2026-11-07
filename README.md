@@ -97,6 +97,8 @@ restano nei file locali ignorati da Git. Riferimento del modello:
 
 Python 3.11+:
 
+Eseguire i comandi dalla radice del repository, non dalla cartella `backend`.
+
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
@@ -112,6 +114,13 @@ source backend/.env
 set +a
 python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
 ```
+
+Quando cambi la chiave, ferma Uvicorn con `Ctrl+C`, ricarica le variabili con
+`set -a`, `source backend/.env`, `set +a` e riavvia il comando Uvicorn.
+Il processo già aperto conserva la configurazione precedente. Un errore OpenAI
+401 (per esempio `token_invalidated`) richiede una chiave valida; il tutor ora
+lo distingue dal generico 502, senza mostrare il messaggio privato del provider.
+`/health` controlla solo la presenza della configurazione, non la validità della chiave.
 
 In un altro terminale, copia `.env.example` in `.env.local` e imposta:
 

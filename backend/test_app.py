@@ -5,7 +5,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+import httpx
 from fastapi.testclient import TestClient
+from openai import AuthenticationError
 
 service = importlib.import_module("backend.app")
 
@@ -79,6 +81,18 @@ def test_provider_timeout_keeps_failure_explicit(monkeypatch):
     with TestClient(service.app) as client:
         response = client.post("/tutor/help", json=payload())
     assert response.status_code == 502
+
+
+def test_invalid_key_is_actionable_without_exposing_provider_details(monkeypatch, caplog):
+    private = "secret-key-and-private-page-content"
+    error = AuthenticationError(private, response=httpx.Response(401, request=httpx.Request("POST", "https://api.openai.com/v1/responses")), body={"code": "token_invalidated", "message": private})
+    monkeypatch.setattr(service, "infer", AsyncMock(side_effect=error))
+    with TestClient(service.app) as client:
+        response = client.post("/tutor/help", json=payload())
+    assert response.status_code == 502
+    assert response.json() == {"detail": {"code": "provider_authentication_failed"}}
+    assert "restart the backend" in caplog.text
+    assert private not in response.text + caplog.text
 
 
 def test_provider_contract_uses_the_current_image_and_structured_output(monkeypatch):

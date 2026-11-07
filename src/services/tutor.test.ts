@@ -15,6 +15,23 @@ afterEach(() => {
   vi.resetModules();
 });
 describe("richieste tutor", () => {
+  it.each([
+    [{ detail: { code: "provider_authentication_failed" } }, "AI authentication failed"],
+    [{ detail: "private-provider-error" }, "The tutor is unavailable"],
+    [null, "The tutor is unavailable"],
+  ])("handles API errors without exposing arbitrary provider content: %j", async (body, message) => {
+    vi.stubEnv("VITE_TUTOR_API_URL", "/api");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        if (body === null) throw new SyntaxError("Non-JSON proxy response");
+        return body;
+      },
+    }));
+    const { requestTutor } = await import("./tutor");
+    await expect(requestTutor(request, newPage(1), new AbortController().signal)).rejects.toThrow(message);
+  });
   it("keeps a demo review explicit and never records assessed progress", async () => {
     vi.stubEnv("VITE_TUTOR_API_URL", "");
     vi.useFakeTimers();

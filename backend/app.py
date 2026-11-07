@@ -3,6 +3,7 @@ import asyncio
 import base64
 import binascii
 import json
+import logging
 import os
 import re
 import struct
@@ -14,10 +15,18 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from openai import AsyncOpenAI, OpenAIError
+from openai import AsyncOpenAI, AuthenticationError, OpenAIError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from .voice import SpeechRequest, synthesize_voice
 from websockets.exceptions import WebSocketException
+
+logger = logging.getLogger("uvicorn.error")
+
+
+def authentication_failure():
+    # Never log the provider exception: it may contain credentials or page content.
+    logger.warning("OpenAI authentication failed. Replace the server API key and restart the backend.")
+    return HTTPException(502, {"code": "provider_authentication_failed"})
 
 
 class Schema(BaseModel):
@@ -255,7 +264,10 @@ async def tutor_help(request: TutorRequest):
         decision = await asyncio.wait_for(infer(request), timeout=38)
     except HTTPException:
         raise
-    except (TimeoutError, OpenAIError, ValidationError):
+    except AuthenticationError:
+        raise authentication_failure() from None
+    except (TimeoutError, OpenAIError, ValidationError) as error:
+        logger.warning("Tutor request failed (%s).", type(error).__name__)
         raise HTTPException(502, "The tutor is unavailable. Your writing stays on your device.") from None
     return build_response(request, decision)
 
@@ -266,6 +278,9 @@ async def tutor_speech(script: SpeechRequest, request: Request):
         result = await asyncio.wait_for(synthesize_voice(script, request.is_disconnected), timeout=45)
     except HTTPException:
         raise
-    except (TimeoutError, OpenAIError, ValueError, OSError, WebSocketException):
+    except AuthenticationError:
+        raise authentication_failure() from None
+    except (TimeoutError, OpenAIError, ValueError, OSError, WebSocketException) as error:
+        logger.warning("Voice request failed (%s).", type(error).__name__)
         raise HTTPException(502, "The OpenAI voice is unavailable. Your notes are safe.") from None
     return JSONResponse(result, headers={"Cache-Control": "no-store"})
