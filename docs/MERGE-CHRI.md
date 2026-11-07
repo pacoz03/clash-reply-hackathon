@@ -2,6 +2,13 @@
 
 Data: 7 novembre 2026, Europe/Rome.
 
+Aggiornamento successivo: su scelta esplicita dell'utente configurato localmente
+il backend Python con `gpt-6.1-terra` e frontend `/api`. Una chiamata reale su
+un'equazione sintetica stampata ha risposto HTTP 200 in 4,61 secondi. Nessuna
+chiave è pubblicata; il gateway TypeScript resta disattivato e i problemi descritti
+qui sotto non sono risolti da questa configurazione. La sezione verifiche del
+merge conserva le prove precedenti alla successiva attivazione locale dell'AI.
+
 ## Branch e perimetro
 
 - Base: `gian` / `origin/gian`, commit `fe023f77995ed6a771bda350f219c107c408769d`.

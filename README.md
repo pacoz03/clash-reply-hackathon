@@ -39,6 +39,13 @@ Senza `VITE_TUTOR_API_URL`, il tutor è una **demo locale dichiarata**. Non legg
 
 Il backend reale è implementato, ma richiede una chiave server e la scelta esplicita di un modello vision compatibile con Responses e Structured Outputs. Non è impostato un modello predefinito: confrontare lettura della scrittura, utilità degli indizi, latenza e costo sui casi reali prima di sceglierlo.
 
+Per la prova locale del 7 novembre 2026 l'utente ha scelto `OPENAI_MODEL=gpt-6.1-terra`.
+Una richiesta reale su un'equazione sintetica stampata ha restituito un indizio
+strutturato in circa 4,6 secondi. È una verifica tecnica iniziale, non un confronto
+tra modelli o una validazione della lettura di scrittura a mano. Le credenziali
+restano nei file locali ignorati da Git. Riferimento del modello:
+[GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
+
 ### Avvio backend
 
 Python 3.11+:

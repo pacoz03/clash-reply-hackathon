@@ -2,6 +2,28 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Configurazione e prima chiamata reale a GPT-6.1 Terra
+
+L'utente ha scelto esplicitamente `gpt-6.1-terra` e autorizzato l'uso della propria
+chiave. Configurati solo i file locali ignorati da Git `backend/.env` e `.env.local`
+(permessi 600), con modello server `gpt-6.1-terra` e frontend `/api`. Nessun segreto
+è aggiunto ai file tracciati. Il codice continua a richiedere chiave e modello
+espliciti: non è introdotto un modello di fallback.
+
+Avviato il backend Python su `127.0.0.1:8000` usando il virtualenv disponibile
+in `/tmp/margin-backend-venv`; frontend Vite già attivo sulla porta 5173.
+Verificati health diretto e tramite `/api/health`, configurazione frontend `/api`
+e una richiesta AI reale con `gateway/Component-of-equation.png` (equazione
+sintetica stampata `5x - 20 = 5`). HTTP 200 in circa 4,61 secondi, annotazione
+inglese, regione interna alla pagina, osservazione strutturata, indizio sul primo
+passaggio senza soluzione completa. Non sono stati inviati quaderni dell'utente.
+
+Questa prova supera la precedente assenza di chiamate AI reali ma non costituisce
+un confronto di modelli o una validazione su grafia, materiale universitario,
+nuovi tentativi e casi limite. I blocchi del gateway TypeScript restano invariati:
+il percorso utilizzato è il backend Python. Configurazione locale e processo
+attivo non sono distribuiti dal push; su un altro computer occorre configurarli.
+
 ## Analisi di chri e branch secondario di merge
 
 Su richiesta dell'utente creato `codex/backup-gian-merge-chri` dalla base pulita

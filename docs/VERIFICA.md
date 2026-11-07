@@ -1,6 +1,15 @@
 # Verifica corrente — margin
 
-7 novembre 2026, branch `gian`. Questo aggiornamento sostituisce lo stato delle verifiche nella sezione storica sotto riportata.
+7 novembre 2026, branch `codex/backup-gian-merge-chri` (base `gian`). Questo aggiornamento sostituisce lo stato delle verifiche nella sezione storica sotto riportata.
+
+## Prima chiamata AI reale
+
+- Modello scelto dall'utente: `gpt-6.1-terra`, via backend Python/Responses e schema `Decision` esistente.
+- Chiave e modello solo in `backend/.env`; `.env.local` usa `/api`. File ignorati da Git con permessi 600.
+- `/health` e `/api/health`: HTTP 200 con `configured: true`; entrambi i server Vite già attivi leggono `/api`.
+- Una richiesta reale `POST /tutor/help` con il PNG sintetico stampato `gateway/Component-of-equation.png` (`5x - 20 = 5`), senza quaderni personali: HTTP 200 in 4,61 secondi.
+- Risposta: indizio inglese su come mantenere l'uguaglianza aggiungendo 20 ai due membri, senza soluzione finale; `mode: connected`, pagina/revisione corrispondenti, regione nei limiti, osservazione strutturata. Nessuna citazione inventata.
+- È un controllo tecnico iniziale sul modello reale, non una validazione su scrittura a mano o su più esercizi. Non è stata verificata in questa revisione l'interazione AI dal browser: verificati il percorso HTTP e la configurazione caricata dal frontend.
 
 ## Controlli automatici
 
@@ -28,7 +37,7 @@ Screenshot attuali in `docs/ux/`: margin-library.jpg, margin-compact.jpg, margin
 
 ## Limiti
 
-Non eseguita una chiamata AI reale: mancano chiave e scelta del modello. Non verificati Apple Pencil/palm rejection su iPad fisico, pertinenza del retrieval su un corso reale, correttezza matematica o confini pedagogici del modello, hosting pubblico e uso offline dopo chiusura. Il backend locale non include autenticazione pubblica o rate limiting. Nessun OCR per immagini/PDF scansiti, nessun retrieval vettoriale.
+Eseguita una sola chiamata AI reale su un caso sintetico stampato. Non verificati Apple Pencil/palm rejection su iPad fisico, lettura della grafia reale, pertinenza del retrieval su un corso reale, correttezza matematica generale o confini pedagogici del modello su una suite di casi, hosting pubblico e uso offline dopo chiusura. Il backend locale non include autenticazione pubblica o rate limiting. Nessun OCR per immagini/PDF scansiti, nessun retrieval vettoriale. Il gateway TypeScript importato da chri rimane sperimentale e non compila; questa prova usa Python.
 
 ---
 
