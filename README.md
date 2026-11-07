@@ -30,6 +30,11 @@ Il primo quaderno contiene un esempio illustrativo sulla regola della catena, co
 
 ## Modalità demo e AI reale
 
+Il gateway TypeScript importato da `chri` è conservato come alternativa sperimentale,
+non attiva per default. Mancano moduli dati e l'allineamento al contratto corrente:
+vedi [analisi e piano di merge](docs/MERGE-CHRI.md). Le istruzioni backend qui sotto
+si riferiscono al servizio Python già implementato.
+
 Senza `VITE_TUTOR_API_URL`, il tutor è una **demo locale dichiarata**. Non legge il foglio, non usa le dispense, non verifica formule e non può registrare progressi valutati da AI. Anche Check my update resta dimostrativo. Le interazioni demo sono etichettate e tenute distinte nel contesto successivo.
 
 Il backend reale è implementato, ma richiede una chiave server e la scelta esplicita di un modello vision compatibile con Responses e Structured Outputs. Non è impostato un modello predefinito: confrontare lettura della scrittura, utilità degli indizi, latenza e costo sui casi reali prima di sceglierlo.

@@ -2,6 +2,27 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Analisi di chri e branch secondario di merge
+
+Su richiesta dell'utente creato `codex/backup-gian-merge-chri` dalla base pulita
+`gian` (`fe023f7`) e preparato il merge di `origin/chri` (`a4cd7b8`) dopo fetch.
+`gian` e `chri` non sono modificati. Unico conflitto: `.env.example`, risolto
+mantenendo demo esplicita e backend Python selezionabile con `/api`.
+
+Importati gateway TypeScript/Fastify e piano storico; nessun codice frontend,
+schema persistito o configurazione locale con credenziali modificato. Il gateway
+è sperimentale e non pronto all'uso: importa due moduli `src/data/` assenti dal
+commit e ignora i campi correnti per memoria, fonti, intenti e altezza pagina.
+La compilazione gateway fallisce inoltre con TS2339 sul tipo della risposta SDK
+in `src/ai/provider.ts:77`; confermati anche i quattro TS2307 per i moduli assenti.
+Il backend Python resta il percorso attuale. Non sono state introdotte SQLite,
+migrazioni o implementazioni sostitutive del lavoro del compagno.
+
+Analisi, rischi, conflitto risolto e passi di integrazione funzionale in
+`docs/MERGE-CHRI.md`. Verificati 28 test frontend, build e 12 test Python con il
+virtualenv già disponibile in `/tmp/margin-backend-venv`. Nessuna chiamata AI
+reale; qualità dei modelli e Apple Pencil restano non verificate.
+
 ## Implementazione delle cinque feature concordate
 
 L'utente ha approvato il brand `margin`, UI in inglese e le cinque feature: quaderni/importazione, scrittura, tutor contestuale, nuovo tentativo/memoria, dispense/fonti. Ha chiesto di analizzare prima il codice esistente. Branch attivo osservato: `gian`. La cartella `output/` contiene mockup esplorativi: il commit locale `1cbaea8`, comparso durante il lavoro, li include insieme all’implementazione. Il commit è preservato; le immagini non sono usate come interfaccia dal frontend.
