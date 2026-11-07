@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { annotationGroupId } from "./annotation-groups";
 
 export const PAGE_WIDTH = 794;
 export const PAGE_HEIGHT = 1123;
@@ -44,6 +45,7 @@ export const annotationSchema = z.object({
   kind: z.enum(["hint", "question"]),
   source: z.string().optional(),
   sourceRef: sourceReferenceSchema.optional(),
+  groupId: z.string().optional(),
   revision: z.number().int().nonnegative().optional(),
   mode: z.enum(["demo", "connected"]).optional(),
 });
@@ -56,6 +58,7 @@ export const pageSchema = z.object({
   paper: z.enum(["dots", "lines", "plain"]),
   strokes: z.array(strokeSchema),
   annotations: z.array(annotationSchema),
+  hiddenHintGroups: z.array(z.string()).optional(),
   background: z.string().optional(),
   template: z.literal("chain-rule").optional(),
 });
@@ -131,6 +134,7 @@ export type EditorAction =
     }
   | { type: "edit-observation"; id: string; summary: string }
   | { type: "clear-observations" }
+  | { type: "toggle-hint-group"; pageId: string; groupId: string }
   | { type: "remove-annotation"; pageId: string; id: string };
 export function editorReducer(
   state: EditorState,
@@ -206,7 +210,16 @@ export function editorReducer(
       [page.id]: { past: [...h.past, page.strokes], future: h.future.slice(1) },
     };
   } else if (action.type === "annotate" && action.revision === page.revision) {
-    next = { ...page, annotations: [...page.annotations, action.annotation] };
+    next = {
+      ...page,
+      annotations: [...page.annotations, action.annotation],
+      hiddenHintGroups: page.hiddenHintGroups?.filter((id) => id !== annotationGroupId(action.annotation)),
+    };
+  } else if (action.type === "toggle-hint-group") {
+    const hidden = new Set(page.hiddenHintGroups ?? []);
+    if (hidden.has(action.groupId)) hidden.delete(action.groupId);
+    else hidden.add(action.groupId);
+    next = { ...page, hiddenHintGroups: [...hidden] };
   } else if (action.type === "remove-annotation")
     next = {
       ...page,

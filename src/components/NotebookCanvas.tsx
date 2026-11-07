@@ -23,6 +23,7 @@ import {
   selectionFromPoints,
   uid,
   type Page,
+  type Annotation,
   type Selection,
   type Stroke,
   type Tool,
@@ -40,6 +41,7 @@ interface Props {
   penOnly: boolean;
   selection: Selection | null;
   annotationsVisible: boolean;
+  visibleAnnotations: Annotation[];
   viewportRef: RefObject<HTMLDivElement | null>;
   onSelection: (selection: Selection | null) => void;
   onStroke: (stroke: Stroke) => void;
@@ -396,7 +398,7 @@ export const NotebookCanvas = forwardRef<CanvasHandle, Props>(
           </Layer>
           <Layer ref={overlayRef} listening={false}>
             {annotationsVisible
-              ? page.annotations.map((annotation) => {
+              ? props.visibleAnnotations.map((annotation) => {
                   const a = annotation.anchor;
                   return (
                     <Group key={annotation.id}>

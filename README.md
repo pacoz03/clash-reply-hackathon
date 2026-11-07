@@ -22,7 +22,7 @@ Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173`. La UI è
 
 1. **Quaderni e importazione.** Biblioteca per materia, ricerca, quaderni multipli, pagine continue; PDF o immagini importati come fogli scrivibili. Originali dei materiali conservati separatamente.
 2. **Scrittura.** Penna, gomma, undo/redo per pagina, selezione, spostamento, zoom, carta puntinata/a righe/bianca, salvataggio locale automatico ed esportazione PNG senza aiuti.
-3. **Tutor nel margine.** Seleziona un passaggio e premi Ask margin, oppure chiedi aiuto sull'intera pagina. Indizi progressivi, note collegate al punto selezionato, comprimibili, nascondibili e rimovibili; nessuna sidebar tutor permanente.
+3. **Tutor nel margine.** Seleziona un passaggio e premi Ask margin, oppure chiedi aiuto sull'intera pagina. Indizi progressivi, note collegate al punto selezionato, comprimibili, nascondibili e rimovibili; nessuna sidebar tutor permanente. Gli hint sono raggruppati per punto di richiesta, con visibilità indipendente salvata nel quaderno, oltre al controllo sull’intero livello AI.
 4. **Nuovo tentativo e memoria.** Check my update richiede una lettura dello svolgimento corrente. Learning notes conserva osservazione, aiuto, versione, intento ed esito; le osservazioni si possono modificare o cancellare senza alterare il foglio. Le note riferite a scrittura precedente sono segnalate.
 5. **Fonti del corso.** Course material consente di scegliere fino a sei PDF della materia per il quaderno. Estrazione testuale locale e selezione di estratti; una citazione verificata apre il documento alla pagina usata con il passaggio citato.
 

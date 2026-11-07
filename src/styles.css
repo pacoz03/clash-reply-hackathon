@@ -894,6 +894,24 @@ button:hover:not(:disabled) {
   overflow: visible;
   pointer-events: none;
 }
+.hint-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+}
+.hint-group-toggle small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.hint-entry { border-top: 1px solid var(--line); padding-top: 5px; }
+.hint-group-hidden { background: var(--paper); padding-bottom: 5px; }
 .note-heading {
   display: flex;
   align-items: center;

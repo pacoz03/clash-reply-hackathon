@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { PageSurface } from "./components/PageSurface";
+import { findAnnotationGroup } from "./annotation-groups";
 import { LibraryHome } from "./components/LibraryHome";
 import {
   CourseMaterialPanel,
@@ -312,6 +313,7 @@ export default function App() {
     pageId: string,
     region?: Selection | null,
     requestedIntent: "hint" | "explain" | "check" = "hint",
+    groupId?: string,
   ) => {
     if (!activeId || busy || requestRef.current) return;
     const targetNotebookId = activeId;
@@ -321,6 +323,12 @@ export default function App() {
     const target = targetEntry?.notebook.pages.find((p) => p.id === pageId);
     const canvas = canvasRefs.current.get(pageId);
     if (!target || !canvas) return;
+    const requestRegion = region === undefined
+      ? selection?.pageId === pageId ? selection.region : null
+      : region;
+    const requestGroupId = groupId ?? (requestRegion
+      ? findAnnotationGroup(target.annotations, requestRegion) ?? uid()
+      : `page:${pageId}`);
     const prompt = composerPage === pageId ? question.trim() : "";
     setBusy(true);
     setNotice("");
@@ -334,12 +342,7 @@ export default function App() {
           pageId,
           revision: target.revision,
           image: canvas.snapshot(),
-          selection:
-            region === undefined
-              ? selection?.pageId === pageId
-                ? selection.region
-                : null
-              : region,
+          selection: requestRegion,
           question: prompt,
           intent: requestedIntent,
           previousHints: target.annotations.slice(-10).map((a) => a.text),
@@ -383,7 +386,7 @@ export default function App() {
           type: "annotate",
           pageId,
           revision: response.revision,
-          annotation: response.annotation,
+          annotation: { ...response.annotation, groupId: requestGroupId },
           observation: response.observation
             ? {
                 id: uid(),
@@ -862,9 +865,10 @@ export default function App() {
                   onStroke={(stroke) =>
                     edit({ type: "stroke", pageId: p.id, stroke })
                   }
-                  onHelp={(region, nextIntent) =>
-                    void help(p.id, region, nextIntent)
+                  onHelp={(region, nextIntent, groupId) =>
+                    void help(p.id, region, nextIntent, groupId)
                   }
+                  onToggleGroup={(groupId) => edit({ type: "toggle-hint-group", pageId: p.id, groupId })}
                   onSource={(ref) => {
                     setSourceView(ref);
                     setPanel("materials");

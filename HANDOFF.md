@@ -2,6 +2,30 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Hint raggruppati per punto di richiesta
+
+7 novembre 2026, branch `gian`. Aggiunti gruppi di hint indipendenti sullo stesso
+foglio, con numero di aiuti e pulsante Show/Hide. Nascondere un gruppo rimuove
+note, evidenziazioni e collegamenti; resta il richiamo per riaprirlo. Il controllo
+sull’intero livello AI conserva le scelte locali. Visibilità salvata nel quaderno.
+Another hint e Check my update conservano il gruppo; selezioni molto simili
+riusano il punto esistente. Le richieste senza selezione condividono un gruppo
+per pagina. Una risposta corrente riapre solo il proprio gruppo.
+
+Compatibilità: campi opzionali `Annotation.groupId` e `Page.hiddenHintGroups`,
+schemi versione 1 e IndexedDB versione 2 invariati. Note legacy raggruppate per
+coordinate uguali senza riscrivere i dati. La visibilità non cambia revisione,
+tratti, memoria o cronologia; le risposte obsolete non riaprono gruppi.
+
+Verificati 31 test frontend, build e diff check. Browser: nota legacy visibile,
+nascondi gruppo, recupero dopo reload, livello globale off/on che conserva il
+gruppo nascosto. Nessuna nuova chiamata AI. Test automatici per gruppi distinti,
+follow-up, selezione ridisegnata, persistenza e risposte obsolete.
+L’utente conferma che su iPad funziona tutto; non sono stati raccolti dettagli
+sul dispositivo o un protocollo di prova. Su sua indicazione la validazione
+educativa estesa è rimandata; priorità dell’hackathon alle interazioni visive e
+vocali di maggiore impatto, ancora da scegliere e implementare.
+
 ## Configurazione e prima chiamata reale a GPT-6.1 Terra
 
 L'utente ha scelto esplicitamente `gpt-6.1-terra` e autorizzato l'uso della propria

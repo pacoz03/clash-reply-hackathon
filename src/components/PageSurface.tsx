@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { MessageCircle, Sparkles, X } from "lucide-react";
+import { Eye, EyeOff, MessageCircle, Sparkles, X } from "lucide-react";
 import { NotebookCanvas, type CanvasHandle } from "./NotebookCanvas";
 import {
   PAGE_WIDTH,
@@ -16,6 +16,7 @@ import {
   type Tool,
 } from "../model";
 import { layoutNotes } from "../note-layout";
+import { groupAnnotations } from "../annotation-groups";
 import { tutorMode } from "../services/tutor";
 import type { Material } from "../library";
 
@@ -36,7 +37,8 @@ interface Props {
   onActivate: () => void;
   onSelection: (selection: Selection | null) => void;
   onStroke: (stroke: Stroke) => void;
-  onHelp: (region?: Selection | null, intent?: "hint" | "check") => void;
+  onHelp: (region?: Selection | null, intent?: "hint" | "check", groupId?: string) => void;
+  onToggleGroup: (groupId: string) => void;
   onSource: (ref: NonNullable<Annotation["sourceRef"]>) => void;
   materials: Material[];
   onCompose: () => void;
@@ -51,6 +53,9 @@ export function PageSurface(props: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const notesRef = useRef<HTMLElement>(null);
   const [heights, setHeights] = useState<Record<string, number>>({});
+  const groups = groupAnnotations(page.annotations);
+  const hiddenGroups = new Set(page.hiddenHintGroups ?? []);
+  const visibleAnnotations = groups.filter((group) => !hiddenGroups.has(group.id)).flatMap((group) => group.annotations);
   const [compact, setCompact] = useState(
     () => window.matchMedia("(max-width: 899px)").matches,
   );
@@ -80,9 +85,9 @@ export function PageSurface(props: Props) {
       ?.querySelectorAll("[data-annotation-id]")
       .forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [page.annotations, props.annotationsVisible, compact]);
+  }, [page.annotations, page.hiddenHintGroups, props.annotationsVisible, compact]);
   const notesLayout = layoutNotes(
-    page.annotations,
+    groups.map((group) => ({ ...group.annotations[0], id: group.id })),
     scale,
     page.height,
     heights,
@@ -131,6 +136,7 @@ export function PageSurface(props: Props) {
             penOnly={props.penOnly}
             selection={selection}
             annotationsVisible={props.annotationsVisible}
+            visibleAnnotations={visibleAnnotations}
             viewportRef={props.viewportRef}
             onSelection={props.onSelection}
             onStroke={props.onStroke}
@@ -198,14 +204,15 @@ export function PageSurface(props: Props) {
                 height={Math.max(page.height * scale, notesLayout.bottom)}
                 aria-hidden="true"
               >
-                {page.annotations.map((annotation, i) => {
+                {groups.map((group, i) => {
+                  if (hiddenGroups.has(group.id)) return null;
                   const anchorY =
-                    (annotation.anchor.y + annotation.anchor.height / 2) *
+                    (group.anchor.y + group.anchor.height / 2) *
                     scale;
                   const noteY = notesLayout.positions[i] + 24;
                   return (
                     <polyline
-                      key={annotation.id}
+                      key={group.id}
                       points={`0,${anchorY} 8,${anchorY} 16,${noteY} 24,${noteY}`}
                       fill="none"
                       stroke="currentColor"
@@ -215,95 +222,112 @@ export function PageSurface(props: Props) {
                 })}
               </svg>
             ) : null}
-            {page.annotations.map((annotation, i) => (
-              <article
-                className="margin-note"
-                data-annotation-id={annotation.id}
-                key={annotation.id}
-                style={{ top: notesLayout.positions[i] }}
+            {groups.map((group, groupIndex) => (
+              <section
+                className={`margin-note hint-group ${hiddenGroups.has(group.id) ? "hint-group-hidden" : ""}`}
+                data-annotation-id={group.id}
+                key={group.id}
+                aria-label={`Hints for step ${groupIndex + 1}`}
+                style={{ top: notesLayout.positions[groupIndex] }}
               >
-                <div className="note-heading">
-                  <button
-                    className="note-collapse"
-                    aria-label={`${collapsed.has(annotation.id) ? "Expand" : "Collapse"} hint ${i + 1}`}
-                    aria-expanded={!collapsed.has(annotation.id)}
-                    onClick={() =>
-                      setCollapsed((previous) => {
-                        const next = new Set(previous);
-                        if (next.has(annotation.id)) next.delete(annotation.id);
-                        else next.add(annotation.id);
-                        return next;
-                      })
-                    }
+                <button
+                  className="hint-group-toggle"
+                  aria-expanded={!hiddenGroups.has(group.id)}
+                  aria-label={`${hiddenGroups.has(group.id) ? "Show" : "Hide"} ${group.annotations.length} hints for step ${groupIndex + 1}`}
+                  onClick={() => props.onToggleGroup(group.id)}
+                >
+                  <span>Step {groupIndex + 1} <small>· {group.annotations.length} {group.annotations.length === 1 ? "hint" : "hints"}</small></span>
+                  {hiddenGroups.has(group.id) ? <Eye size={15} /> : <EyeOff size={15} />}
+                </button>
+                {!hiddenGroups.has(group.id) ? group.annotations.map((annotation, i) => (
+                  <article
+                    className="hint-entry"
+                    key={annotation.id}
                   >
-                    <Sparkles size={12} />{" "}
-                    {annotation.mode === "demo" ||
-                    annotation.source?.toLowerCase().includes("demo")
-                      ? "DEMO HINT"
-                      : annotation.mode === "connected"
-                        ? "AI NOTE"
-                        : "NOTE"}{" "}
-                    · {i + 1}
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label={`Remove hint ${i + 1} from page ${index + 1}`}
-                    onClick={() => props.onRemove(annotation.id)}
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                {!collapsed.has(annotation.id) ? (
-                  <>
-                    <p>{annotation.text}</p>
-                    {annotation.revision !== undefined &&
-                    annotation.revision !== page.revision ? (
-                      <small className="earlier-note">
-                        Based on earlier writing
-                      </small>
-                    ) : null}
-                    {annotation.sourceRef ? (
+                    <div className="note-heading">
                       <button
-                        className="note-source"
-                        disabled={
-                          !props.materials.some(
-                            (m) => m.id === annotation.sourceRef?.materialId,
-                          )
+                        className="note-collapse"
+                        aria-label={`${collapsed.has(annotation.id) ? "Expand" : "Collapse"} hint ${i + 1}`}
+                        aria-expanded={!collapsed.has(annotation.id)}
+                        onClick={() =>
+                          setCollapsed((previous) => {
+                            const next = new Set(previous);
+                            if (next.has(annotation.id)) next.delete(annotation.id);
+                            else next.add(annotation.id);
+                            return next;
+                          })
                         }
-                        onClick={() => props.onSource(annotation.sourceRef!)}
                       >
-                        {props.materials.find(
-                          (m) => m.id === annotation.sourceRef?.materialId,
-                        )?.name ?? "Source no longer available"}{" "}
-                        · p. {annotation.sourceRef.page} ↗
+                        <Sparkles size={12} />{" "}
+                        {annotation.mode === "demo" ||
+                        annotation.source?.toLowerCase().includes("demo")
+                          ? "DEMO HINT"
+                          : annotation.mode === "connected"
+                            ? "AI NOTE"
+                            : "NOTE"}{" "}
+                        · {i + 1}
                       </button>
-                    ) : annotation.source ? (
-                      <small>{annotation.source}</small>
+                      <button
+                        className="icon-button"
+                        aria-label={`Remove hint ${i + 1} from page ${index + 1}`}
+                        onClick={() => props.onRemove(annotation.id)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {!collapsed.has(annotation.id) ? (
+                      <>
+                        <p>{annotation.text}</p>
+                        {annotation.revision !== undefined &&
+                        annotation.revision !== page.revision ? (
+                          <small className="earlier-note">
+                            Based on earlier writing
+                          </small>
+                        ) : null}
+                        {annotation.sourceRef ? (
+                          <button
+                            className="note-source"
+                            disabled={
+                              !props.materials.some(
+                                (m) => m.id === annotation.sourceRef?.materialId,
+                              )
+                            }
+                            onClick={() => props.onSource(annotation.sourceRef!)}
+                          >
+                            {props.materials.find(
+                              (m) => m.id === annotation.sourceRef?.materialId,
+                            )?.name ?? "Source no longer available"}{" "}
+                            · p. {annotation.sourceRef.page} ↗
+                          </button>
+                        ) : annotation.source ? (
+                          <small>{annotation.source}</small>
+                        ) : null}
+                        <button
+                          className="note-next"
+                          disabled={props.busy}
+                          onClick={() => {
+                            props.onActivate();
+                            props.onSelection(annotation.anchor);
+                            props.onHelp(annotation.anchor, "hint", group.id);
+                          }}
+                        >
+                          Another hint <span aria-hidden="true">↗</span>
+                        </button>
+                        <button
+                          className="note-next"
+                          disabled={props.busy}
+                          onClick={() => {
+                            props.onActivate();
+                            props.onHelp(annotation.anchor, "check", group.id);
+                          }}
+                        >
+                          Check my update <span aria-hidden="true">↗</span>
+                        </button>
+                      </>
                     ) : null}
-                    <button
-                      className="note-next"
-                      disabled={props.busy}
-                      onClick={() => {
-                        props.onActivate();
-                        props.onSelection(annotation.anchor);
-                        props.onHelp(annotation.anchor, "hint");
-                      }}
-                    >
-                      Another hint <span aria-hidden="true">↗</span>
-                    </button>
-                    <button
-                      className="note-next"
-                      disabled={props.busy}
-                      onClick={() => {
-                        props.onActivate();
-                        props.onHelp(annotation.anchor, "check");
-                      }}
-                    >
-                      Check my update <span aria-hidden="true">↗</span>
-                    </button>
-                  </>
-                ) : null}
-              </article>
+                  </article>
+                )) : null}
+              </section>
             ))}
           </aside>
         ) : null}
