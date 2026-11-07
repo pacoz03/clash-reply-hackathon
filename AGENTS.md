@@ -28,14 +28,17 @@ Scelta esplicita: quaderno minimale, carta chiara, inchiostro scuro, pochi coman
 
 - Preservare il livello dei tratti dello studente separatamente dalle annotazioni AI.
 - Non cancellare o riscrivere automaticamente i tratti tramite il tutor.
-- Mantenere l'allineamento durante zoom e spostamento.
+- Mantenere l'allineamento durante zoom e spostamento. Il pulsante di aiuto resta accanto alla selezione; domande e indizi vivono sul livello sopra il foglio o nel suo margine, senza ripristinare la sidebar tutor.
+- La home organizza materie, quaderni e materiali. Archiviare un materiale originale è distinto dall'importarlo come fogli scrivibili; i materiali non sono ancora fonti consultate dal tutor.
 - Verificare interazioni touch e leggibilità sui layout tablet e compatti.
 - Conservare tastiera, focus visibile, etichette accessibili e supporto a reduced motion.
 
 ## Architettura e invarianti
 
 - Stack implementato: React 19, TypeScript, Vite 6, react-konva/Konva, Zod, PDF.js, IndexedDB, Vitest. Font distribuiti localmente con Fontsource.
-- `src/model.ts` contiene schema versionato, reducer e cronologia per pagina. Gestire esplicitamente la compatibilità dei dati salvati se cambia lo schema.
+- `src/model.ts` contiene schema del quaderno versione 1, reducer e cronologia per pagina. `src/library.ts` contiene la biblioteca versione 1 con materie, quaderni identificati da ID e metadati dei materiali. Gestire esplicitamente la compatibilità dei dati salvati se cambia uno schema.
+- IndexedDB versione 2 conserva il quaderno legacy in `current`, salva la biblioteca in `library` e i file originali nello store `materials`. Non sovrascrivere dati non validi né perdere i Blob durante una migrazione.
+- I fogli scorrono nello stesso viewport; la pagina attiva segue lo scroll. I canvas lontani dalla vista possono essere smontati, mantenendo dati e cronologia nel reducer. Le richieste asincrone identificano anche il quaderno di destinazione.
 - Coordinate logiche: larghezza pagina 794; altezza variabile. Lo zoom è solo una trasformazione visiva.
 - I movimenti della penna restano transitori nel canvas; lo stato React riceve il tratto completo al termine del gesto. Evitare render globali a ogni campione.
 - La gomma agisce sul livello di scrittura, preservando consegna e livello AI.

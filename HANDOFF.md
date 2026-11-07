@@ -28,41 +28,53 @@ Level 3 è facoltativo: multi-agente, knowledge graph, campagna di lancio. Il te
 
 ## Stato implementato
 
-Boilerplate completo del frontend, non dell'intero prodotto descritto in `REQUISITI.md`:
+Frontend del prototipo, non dell'intero prodotto descritto in `REQUISITI.md`:
 
-- React 19 + TypeScript + Vite 6; canvas Konva/react-konva; Zod; PDF.js lazy; IndexedDB; Vitest.
-- Pagine multiple e titolo quaderno modificabile.
-- Penna con tre colori/tre spessori; gomma; undo/redo per pagina; svuotamento reversibile dei tratti.
-- Selezione rettangolare; zoom a pulsanti; trascinamento; modalità Solo penna con dito per spostare.
-- Carta puntinata, a righe o bianca.
-- Importazione PDF multipagina e PNG/JPEG/WebP, limiti 20 MB e 20 pagine PDF.
-- Salvataggio automatico IndexedDB serializzato; recupero dopo ricaricamento.
-- Annotazioni AI visualizzabili/nascondibili/rimuovibili su livello distinto.
-- Esportazione PNG della consegna e dei tratti senza annotazioni.
-- Tutor demo locale, chiaramente dichiarato: suggerimenti predefiniti, nessuna analisi AI e nessun invio a provider.
-- API adapter pronto, annullamento, timeout e controllo pagina/revisione delle risposte.
-- UI responsive con sidebar e pannello tutor richiudibili sui formati compatti.
+- React 19 + TypeScript + Vite 6; Konva/react-konva; Zod; PDF.js lazy; IndexedDB; Vitest.
+- Home/biblioteca con materie create dall'utente, più quaderni per materia, ricerca per nome e ripresa del quaderno modificato più recentemente.
+- Creazione di quaderni vuoti, titolo modificabile nel notebook, eliminazione con conferma inline.
+- Materiali per materia: PDF/PNG/JPEG/WebP fino a 20 MB, originali Blob conservati in IndexedDB, download, eliminazione con conferma, importazione in un quaderno della stessa materia.
+- Nessuna restrizione di argomento imposta dalla materia. La prima materia Analisi matematica contiene il quaderno dimostrativo precedente; non si creano corsi o materiali universitari fittizi.
+- Notebook senza sidebar: strumenti flottanti, pagine impilate nello stesso viewport con scorrimento continuo e selettore del foglio nel footer. Il foglio attivo segue lo scroll e determina undo/redo, esportazione e richiesta sull'intera pagina.
+- Canvas montati solo per pagine vicine alla vista o attive, con recupero dei dati dal reducer. I movimenti della penna restano transitori in Konva.
+- Penna con tre colori/tre spessori; gomma; undo/redo per pagina; svuotamento reversibile; modalità Solo penna con dito per spostare; carta puntinata, righe o bianca.
+- Alla fine della selezione compare direttamente il pulsante **Aiuto AI** accanto alla zona. Un clic richiede l'indizio; il fumetto permette di aggiungere una domanda e scegliere l'intento.
+- Compositore delle richieste sul livello sopra il foglio, anche per richieste senza selezione dalla toolbar.
+- Indizi HTML accessibili in margine, collegati alle rispettive regioni evidenziate su Konva. Restano separati dai tratti e sono comprimibili, nascondibili e rimovibili. Disposizione misurata per evitare sovrapposizioni, aggiornata durante zoom e cambio formato. Sotto 900 px gli indizi stanno sul foglio, vicino al passaggio.
+- Importazione PDF multipagina e immagini come nuovi fogli; massimo 20 pagine per PDF. I PDF nei quaderni rimangono rasterizzati.
+- Tutor demo locale esplicito; nessuna analisi AI, verifica matematica o invio al provider. Contratto backend invariato, timeout, annullamento e controllo di pagina/revisione/quaderno sulle risposte.
+- Esportazione PNG della consegna e dei tratti senza livello tutor. Il download automatico non è stato verificato end-to-end nel browser integrato in questa revisione (attesa evento download scaduta).
 
-Primo foglio: esempio illustrativo sulla derivata di `sin(x² + 1)`, con passaggio volutamente incompleto. Non è materiale universitario autentico.
+Primo foglio demo: esempio illustrativo sulla derivata di `sin(x² + 1)`, con passaggio volutamente incompleto. Non è materiale universitario autentico. I nuovi quaderni sono vuoti.
+
+### Dati e compatibilità
+
+- Lo schema di ogni `Notebook` resta versione 1.
+- Nuovo involucro `Library`, versione 1, con materie, quaderni identificati da ID e metadati dei materiali.
+- IndexedDB `margine-notebook` passa alla versione 2, preservando lo store `notebooks` e aggiungendo lo store Blob `materials`.
+- Nuova chiave `library`. Se manca, si valida e migra il precedente quaderno da `current`, lasciando intatto il dato originale.
+- Dati non validi bloccano il salvataggio automatico per evitare sovrascritture. Scritture serializzate; storico undo solo in sessione.
+- I materiali salvati non sono ancora inviati al tutor o usati come fonti/RAG.
 
 ## Mappa dei file
 
 | File | Responsabilità |
 | --- | --- |
-| `src/App.tsx` | Shell, toolbar, navigazione, persistenza, richieste tutor |
-| `src/model.ts` | Schema Zod/versione 1, tipi, reducer, cronologia per pagina |
-| `src/components/NotebookCanvas.tsx` | Livelli del foglio, Pointer Events, snapshot |
-| `src/components/PageThumbnail.tsx` | Anteprime per la navigazione |
-| `src/services/storage.ts` | IndexedDB e coda di salvataggio |
-| `src/services/import.ts` | Rasterizzazione PDF e immagini |
+| `src/App.tsx` | Home/notebook, toolbar, scroll, persistenza e richieste tutor |
+| `src/library.ts` | Schema biblioteca, materie, metadati materiali, reducer e migrazione |
+| `src/model.ts` | Schema quaderno versione 1, reducer, cronologia per pagina |
+| `src/note-layout.ts` | Posizione delle note e prevenzione delle sovrapposizioni |
+| `src/components/LibraryHome.tsx` | Biblioteca con materie, quaderni e materiali |
+| `src/components/PageSurface.tsx` | Pagina continua, canvas virtualizzato, aiuto contestuale e indizi |
+| `src/components/NotebookCanvas.tsx` | Livelli del foglio, Pointer Events, snapshot senza overlay |
+| `src/services/storage.ts` | IndexedDB, migrazione, Blob e coda serializzata |
+| `src/services/import.ts` | Rasterizzazione PDF e immagini, caricata su richiesta |
 | `src/services/tutor.ts` | Modalità demo, contratto API e validazione risposta |
-| `src/model.test.ts` | Test di reducer, cronologia e selezioni |
-| `src/styles.css` | Tema e layout responsive |
-| `README.md` | Avvio, uso, contratto API e limiti |
-| `REQUISITI.md` | Specifica di prodotto v0.1, più ampia del boilerplate |
-| `.impeccable.md` | Contesto di design confermato |
-| `docs/VERIFICA.md` | Evidenze dei controlli eseguiti |
-| `docs/notebook-preview.png` | Screenshot locale della demo verificata |
+| `src/**/*.test.ts` | 18 test su modello, biblioteca, layout note e richieste tutor |
+| `src/styles.css` | Tema minimale e layout responsive |
+| `docs/VERIFICA.md` | Evidenze dei controlli e limiti |
+| `docs/ux/` | Screenshot della nuova UX |
+| `.impeccable.md`, `PRODUCT.md` | Contesto di design confermato |
 
 ## Contratto AI da mantenere
 
@@ -76,12 +88,14 @@ La pagina logica è larga 794 unità, altezza variabile. Il frontend valida sche
 
 ## Verifiche già eseguite
 
-- Ultima build TypeScript/Vite del boilerplate riuscita.
-- Sette test Vitest passati: cronologia isolata per pagina, redo invalidato dopo nuovo tratto, clear undoabile, risposte obsolete, rimozione annotazione indipendente dai tratti, normalizzazione/clamp selezione, tap accidentali.
-- Browser: scrittura, clear/undo/redo, pagine, selezione, indizi demo e loro rimozione, recupero dopo reload.
-- Importazione di un PDF sintetico di due pagine con formule riuscita; fixture temporanea `/tmp/margine-import-test.pdf`, non necessaria per avviare il progetto.
-- Controllo visivo layout compatto e viewport 1024×768; nessun errore/warning in console nel flusso osservato.
-- Il browser locale usato per QA contiene anche pagine sintetiche; i nuovi browser ricevono lo stato iniziale.
+- Build TypeScript/Vite riuscita; 18 test Vitest passati.
+- Test: cronologia per pagina, redo, clear, risposte obsolete, separazione livelli, selezioni; migrazione del quaderno, isolamento tra materie/quaderni, eliminazione e aggiornamenti tardivi; annullamento tutor, validazione identità/revisione/limiti, immagini basse; note senza sovrapposizioni e coordinate allo zoom.
+- Browser integrato: biblioteca precedente recuperata con quattro fogli; nuova materia Fisica generale e nuovo quaderno vuoto; scrittura, undo/redo, selezione con pulsante adiacente, richiesta diretta e domanda con intento; due indizi collegati e comprimibili; visibilità del livello AI; zoom.
+- Caricato il PDF sintetico `/tmp/margine-import-test.pdf` come materiale, poi importato nello stesso quaderno come due pagine consecutive. Originale e metadati conservati dopo reload.
+- Verificati scorrimento tra fogli e aggiornamento della pagina attiva, recupero della biblioteca e riapertura di tratti/indizi dopo reload.
+- Controllati layout tablet e compatti, incluso browser con zoom del 130%; nessun overflow orizzontale del documento. Nessun errore o warning frontend osservato nella console.
+- Nel browser locale rimangono i dati sintetici di prova (materia Fisica generale, quaderno Meccanica · esercizi e PDF di test). Non sono contenuti iniziali distribuiti agli altri utenti.
+- Download PNG: evento non ricevuto dal browser integrato; non dichiarare il salvataggio del file verificato. La generazione snapshot usata dal tutor funziona e continua a escludere i livelli HTML/Konva AI.
 
 Non verificati: hardware Apple Pencil, palm rejection reale, backend AI, correttezza matematica generata, hosting pubblico, uso offline dopo chiusura.
 
@@ -89,14 +103,13 @@ Non verificati: hardware Apple Pencil, palm rejection reale, backend AI, corrett
 
 - Nessun backend FastAPI né chiamata a un modello reale.
 - Nessun materiale universitario reale associato; il requisito di grounding della challenge resta da realizzare.
-- Nessun RAG, estrazione testuale o gestione delle dispense. I PDF sono immagini di sfondo rasterizzate.
+- Nessun RAG o estrazione testuale. Le dispense possono essere archiviate nei materiali, ma il tutor non le consulta. I PDF importati nei quaderni sono immagini di sfondo rasterizzate.
 - Nessuna memoria didattica delle difficoltà: le annotazioni sono persistenti e vengono riutilizzate come precedenti indizi, ma non esiste un learner model.
 - Nessuna verifica simbolica/fisica implementata. I pulsanti di tipo d'aiuto inviano l'intento al servizio; il mock resta predefinito.
 - Nessun pinch zoom, pressione penna o gestione avanzata del palmo. Solo penna è un filtro di input con panning al dito.
 - Undo/redo rimane nella sessione; non viene ripristinato dal database. Vengono conservati i tratti finali, non l'intera cronologia.
-- Miniature indicative: non riproducono la gomma o gli overlay AI.
-- Nessun account, sincronizzazione, condivisione live o dashboard docente. Ogni browser/origine ha un quaderno locale distinto.
-- Mancano gestione completa di eliminazione quaderni e dati, autenticazione e politiche server per un rilascio pubblico.
+- Nessun account, sincronizzazione, condivisione live o dashboard docente. Ogni browser/origine ha una biblioteca locale distinta.
+- Quaderni e materiali sono eliminabili dalla home. Restano da definire autenticazione, gestione completa dei dati server e politiche per un rilascio pubblico. La chiave del quaderno legacy è conservata per compatibilità.
 - La modalità demo non consente di dichiarare completato il Level 2 della challenge.
 
 Prossime attività sensate, da coordinare con le richieste dell'utente: provare su iPad reale; implementare backend conforme all'adapter; confrontare modelli vision su scrittura reale; collegare fonti del corso; aggiungere memoria delle difficoltà e verifiche applicabili; preparare demo con casi di errore, ambiguità e confine pedagogico. Non sono attività già completate né un'autorizzazione implicita a costruire tutte le estensioni.
@@ -120,11 +133,11 @@ Remote origin: `https://github.com/pacoz03/clash-reply-hackathon.git`.
 
 - Il repository remoto era vuoto; creato e pubblicato commit iniziale `8ca06f8` (`Initial notebook boilerplate`) su `main`.
 - Su richiesta esplicita creati e pubblicati `gian`, `andre`, `pas`, `chri`, `dev`, inizialmente tutti allo stesso commit.
-- All'inizio di questo aggiornamento il checkout corrente risulta **`gian`**, collegato a `origin/gian`, e il worktree era pulito. Non presumere che sia ancora `main`.
+- All'inizio di questo aggiornamento il checkout corrente risulta **`gian`**, collegato a `origin/gian`, e il worktree conteneva soltanto la cartella non tracciata `output/`, prodotta in precedenza e lasciata intatta. Non presumere che sia ancora `main`.
 - L'utente ha chiesto di pushare il lavoro su origin. I file di contesto vengono consegnati sul branch attivo, senza merge impliciti sugli altri branch.
 - In una verifica precedente `gh auth status` segnalava un token non valido, ma `git push` HTTPS è riuscito. Non presumere che la CLI `gh` e Git usino necessariamente la stessa autenticazione.
 - Non fare force push, non riscrivere la storia e non sovrascrivere il lavoro dei compagni.
 
 ## Ultima richiesta dell'utente
 
-«salva tutto il contesto in handoff ed agent md». Questa documentazione e `AGENTS.md` ne sono la consegna. Non ci sono altri sviluppi funzionali richiesti in sospeso in questo momento.
+Riorganizzare UX e utilizzo: aiuto AI direttamente accanto alla selezione, eliminare la sidebar destra, interventi sul livello sopra il foglio come nel mockup fornito; home per gestire materiali e più notebook separati per materia; esercizi importati o scritti a mano; fogli a scorrimento continuo. Questa revisione implementa il flusso frontend richiesto. Backend AI e grounding sui materiali restano da realizzare.

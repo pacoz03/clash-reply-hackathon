@@ -1,6 +1,6 @@
 # Quaderno AI per esercizi — requisiti v0.1
 
-Stato: proposta di requisiti per il prototipo, da affinare con la demo. Nessuna funzionalità è ancora implementata.
+Stato: specifica del prodotto completo, implementata solo in parte. Consultare `HANDOFF.md` per lo stato verificato del prototipo e i limiti attuali.
 
 ## 1. Obiettivo e utenti
 
