@@ -2,6 +2,17 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Presentazione HTML per il pitch
+
+7 novembre 2026, branch `gian`. Creato `public/pitch.html`: otto slide in inglese
+con branding margin, font e immagini incorporati per uso offline, navigazione
+da tastiera e touch, schermo intero, note del relatore e collegamento alla demo.
+Apribile su `/pitch.html` con Vite o come file HTML autonomo. Testo del pitch
+in `docs/PITCH-SCRIPT.md`, circa 2–3 minuti. Nessun dato di mercato o miglioramento
+didattico inventato; memoria descritta come traccia dei tentativi nel quaderno.
+Verificati nel browser copertina, navigazione, slide demo, note del relatore e
+assenza di overflow delle otto slide. Il file non modifica il flusso dell’app.
+
 ## Disegni nel canvas e voce OpenAI
 
 7 novembre 2026, branch `gian`. Su richiesta dell’utente aggiunti Draw it e
