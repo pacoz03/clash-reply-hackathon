@@ -18,6 +18,7 @@ import {
   Group,
 } from "react-konva";
 import type Konva from "konva";
+import { CanvasVisual } from "./CanvasVisual";
 import {
   PAGE_WIDTH,
   selectionFromPoints,
@@ -42,6 +43,7 @@ interface Props {
   selection: Selection | null;
   annotationsVisible: boolean;
   visibleAnnotations: Annotation[];
+  narration: { annotationId: string; elementId: string | null } | null;
   viewportRef: RefObject<HTMLDivElement | null>;
   onSelection: (selection: Selection | null) => void;
   onStroke: (stroke: Stroke) => void;
@@ -68,7 +70,7 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
     <>
       <Rect width={PAGE_WIDTH} height={page.height} fill="#fffef9" />
       {image ? (
-        <CanvasImage image={image} width={PAGE_WIDTH} height={page.height} />
+        <CanvasImage image={image} width={PAGE_WIDTH} height={page.backgroundHeight ?? Math.round(image.naturalHeight * PAGE_WIDTH / image.naturalWidth)} />
       ) : null}
       {page.paper === "lines"
         ? Array.from({ length: Math.floor(page.height / 30) }, (_, i) => (
@@ -397,6 +399,9 @@ export const NotebookCanvas = forwardRef<CanvasHandle, Props>(
             ) : null}
           </Layer>
           <Layer ref={overlayRef} listening={false}>
+            {annotationsVisible ? props.visibleAnnotations.filter((a) => a.visual).map((annotation) => (
+              <CanvasVisual key={annotation.id} annotation={annotation} activeElement={props.narration?.annotationId === annotation.id ? props.narration.elementId : null} />
+            )) : null}
             {annotationsVisible
               ? props.visibleAnnotations.map((annotation) => {
                   const a = annotation.anchor;

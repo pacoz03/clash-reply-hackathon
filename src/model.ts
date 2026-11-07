@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { annotationGroupId } from "./annotation-groups";
+import { visualSchema } from "./canvas-visual";
 
 export const PAGE_WIDTH = 794;
 export const PAGE_HEIGHT = 1123;
@@ -46,6 +47,7 @@ export const annotationSchema = z.object({
   source: z.string().optional(),
   sourceRef: sourceReferenceSchema.optional(),
   groupId: z.string().optional(),
+  visual: visualSchema.optional(),
   revision: z.number().int().nonnegative().optional(),
   mode: z.enum(["demo", "connected"]).optional(),
 });
@@ -60,6 +62,7 @@ export const pageSchema = z.object({
   annotations: z.array(annotationSchema),
   hiddenHintGroups: z.array(z.string()).optional(),
   background: z.string().optional(),
+  backgroundHeight: z.number().positive().max(6000).optional(),
   template: z.literal("chain-rule").optional(),
 });
 export type Page = z.infer<typeof pageSchema>;
@@ -213,6 +216,8 @@ export function editorReducer(
     next = {
       ...page,
       annotations: [...page.annotations, action.annotation],
+      ...(page.background && action.annotation.visual && !page.backgroundHeight ? { backgroundHeight: page.height } : {}),
+      height: Math.max(page.height, action.annotation.visual ? action.annotation.visual.frame.y + action.annotation.visual.frame.height + 280 : 0),
       hiddenHintGroups: page.hiddenHintGroups?.filter((id) => id !== annotationGroupId(action.annotation)),
     };
   } else if (action.type === "toggle-hint-group") {

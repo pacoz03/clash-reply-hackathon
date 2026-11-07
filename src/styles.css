@@ -864,6 +864,16 @@ button:hover:not(:disabled) {
 .context-help:hover:not(:disabled) {
   background: oklch(38% 0.04 160);
 }
+.context-draw { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 9px; font-size: 11px; color: var(--ink); }
+.help-presentation { display: flex; gap: 6px; }
+.help-presentation button { flex: 1; min-height: 40px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; }
+.help-presentation button[aria-pressed="true"] { background: var(--sage); border-color: var(--accent); }
+.sketch-controls { position: absolute; z-index: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; padding: 3px 0; }
+.sketch-controls button { display: flex; align-items: center; gap: 6px; min-height: 44px; font-size: 11px; color: var(--ink); }
+.sketch-controls small { font-size: 9px; color: var(--muted); }
+.sketch-restore { position: absolute; z-index: 2; min-height: 44px; padding: 0 12px; display: flex; align-items: center; gap: 7px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; font-size: 11px; }
+.sketch-speaking button:first-child { color: var(--accent); }
+.sketch-caption { flex-basis: 100%; font-size: 12px; line-height: 1.5; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
 .context-help small {
   font-size: 7px;
   letter-spacing: 0.5px;

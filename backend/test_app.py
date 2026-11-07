@@ -97,3 +97,35 @@ def test_provider_contract_uses_the_current_image_and_structured_output(monkeypa
     assert args["store"] is False and args["text_format"] is service.Decision
     assert args["input"][0]["content"][1]["image_url"] == payload()["image"]
     assert '"intent": "check"' in args["input"][0]["content"][0]["text"]
+
+
+def test_canvas_decision_uses_reserved_frame_and_preserves_request_identity(monkeypatch):
+    d = decision()
+    d.drawing = service.Drawing(title="Free-body sketch", elements=[service.DrawingElement(id="weight", kind="arrow", x=.5, y=.3, width=0, height=.4, text="mg", color="clay", speech="Weight points down.")])
+    monkeypatch.setattr(service, "infer", AsyncMock(return_value=d))
+    frame = {"x": 64, "y": 1200, "width": 640, "height": 300}
+    with TestClient(service.app) as client:
+        response = client.post("/tutor/help", json=payload(presentation="canvas", drawingArea=frame))
+    assert response.status_code == 200
+    result = response.json()
+    assert result["annotation"]["visual"]["frame"] == frame
+    assert result["annotation"]["visual"]["drawing"]["elements"][0]["speech"] == "Weight points down."
+    assert result["revision"] == 2
+    request = service.TutorRequest(**payload())
+    assert "visual" not in service.build_response(request, d)["annotation"]
+
+
+@pytest.mark.parametrize("change", [{"x": .9, "width": .5}, {"kind": "box", "width": -.1}, {"y": float("nan")}])
+def test_rejects_invalid_canvas_elements(change):
+    from pydantic import ValidationError
+    element = dict(id="weight", kind="arrow", x=.5, y=.3, width=0, height=.4, text="mg", color="clay", speech="Weight points down.")
+    with pytest.raises(ValidationError):
+        service.DrawingElement(**{**element, **change})
+
+
+def test_rejects_a_drawing_area_outside_notebook(monkeypatch):
+    fake = AsyncMock(return_value=decision())
+    monkeypatch.setattr(service, "infer", fake)
+    with TestClient(service.app) as client:
+        assert client.post("/tutor/help", json=payload(presentation="canvas", drawingArea={"x": 64, "y": 5800, "width": 640, "height": 300})).status_code == 422
+    fake.assert_not_called()

@@ -6,6 +6,7 @@ export function layoutNotes(
   pageHeight: number,
   heights: Record<string, number>,
   compact: boolean,
+  allowOverflow: Set<string> = new Set(),
 ) {
   let bottom = 0;
   const positions = annotations.map((annotation) => {
@@ -15,7 +16,7 @@ export function layoutNotes(
       (compact ? 14 : 0);
     const top = Math.max(
       12,
-      Math.min(pageHeight * scale - height - 12, desired),
+      allowOverflow.has(annotation.id) ? desired : Math.min(pageHeight * scale - height - 12, desired),
       bottom ? bottom + 12 : 0,
     );
     bottom = top + height;

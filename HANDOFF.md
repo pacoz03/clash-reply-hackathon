@@ -2,6 +2,45 @@
 
 Aggiornamento corrente: 7 novembre 2026, Europe/Rome. Questo aggiornamento prevale sul contesto storico sotto riportato.
 
+## Disegni nel canvas e voce OpenAI
+
+7 novembre 2026, branch `gian`. Su richiesta dell’utente aggiunti Draw it e
+Draw on page: il backend restituisce scene strutturate con frecce, linee,
+forme, etichette e formule Unicode. Rendering Konva sul livello AI, comparsa
+progressiva con reduced motion, esplorazione Next detail, salvataggio,
+visibilità per gruppo e globale. Disegni esclusi da screenshot tutor ed export.
+La collocazione cerca spazio senza coprire tratti o originali; estende la pagina
+fino a 6.000 unità. `backgroundHeight` conserva la scala della consegna importata.
+Le descrizioni nei layout compatti sono collocate sotto gli schemi.
+Campi opzionali `Annotation.visual` e `Page.backgroundHeight`: Notebook/Library
+restano versione 1, IndexedDB versione 2, compatibili con i dati precedenti.
+
+Voce richiesta esplicitamente con API OpenAI: nuovo `POST /tutor/speech`, stesso
+segreto server, modello locale `gpt-realtime-2.1-mini`, voce `marin`, tramite
+Realtime API e SDK `openai[realtime]`. Nessun modello vocale implicito nel codice,
+nessuna chiave sul client. Segmenti WAV associati agli elementi; evidenziazione
+su riproduzione effettiva, stop su occultamento/navigazione/scrittura cambiata.
+Cache audio limitata in RAM; nessun audio persistito. Nessuna STT o simulazione
+fisica aggiunta. La demo resta etichettata e non analizza il lavoro.
+
+L’utente ha segnalato su iPad animazioni attive senza audio. Sostituito Web Audio
+con un singolo HTMLAudioElement, sblocco nel gesto utente e audioSession playback
+quando supportato. Errori autoplay visibili e retry. Necessario ricaricare su iPad
+per sostituire il player precedente; conferma sul dispositivo ancora attesa.
+
+Prove reali: schema AI di sei elementi su equazione sintetica stampata, HTTP 200
+in 9,81 s; un audio OpenAI di 5,25 s generato in 5,36 s. Browser: importazione di
+immagine sintetica e schema AI reale, recupero del disegno demo dopo reload,
+riproduzione OpenAI e avanzamento tra elementi, hide/show e replay dalla cache,
+layout compatto senza copertura dello schema. Nessun errore/warning nel nuovo
+tab di verifica finale (i log del vecchio tab includono errori Fast Refresh
+durante la sostituzione dell’hook, superati dal reload).
+Screenshot sintetico: docs/ux/margin-canvas-openai-voice.png.
+Backend aggiornato sulla porta 8000; frontend principale 5173. Istanza demo
+separata 5174, senza analisi vision ma con voce OpenAI tramite lo stesso proxy.
+Le configurazioni locali non vengono pubblicate. Restano non certificati grafia,
+correttezza generale degli schemi e audio su hardware iPad dopo questa correzione.
+
 ## Hint raggruppati per punto di richiesta
 
 7 novembre 2026, branch `gian`. Aggiunti gruppi di hint indipendenti sullo stesso

@@ -27,3 +27,7 @@ it("sui formati compatti lascia libera la selezione e contiene una nota sul fond
     layoutNotes([annotation("a", 1100)], 0.5, 1123, { a: 180 }, true).bottom,
   ).toBeLessThanOrEqual(561.5);
 });
+it("keeps compact sketch descriptions below the drawing instead of clamping them over it", () => {
+  const result = layoutNotes([annotation("drawing", 1400)], .5, 1123, { drawing: 200 }, true, new Set(["drawing"]));
+  expect(result.positions[0]).toBeGreaterThan(700);
+});

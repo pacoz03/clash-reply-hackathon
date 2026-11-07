@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Eye, EyeOff, MessageCircle, Sparkles, X } from "lucide-react";
+import { Eye, EyeOff, MessageCircle, PencilLine, Sparkles, Square, Volume2, X } from "lucide-react";
 import { NotebookCanvas, type CanvasHandle } from "./NotebookCanvas";
 import {
   PAGE_WIDTH,
@@ -19,6 +19,8 @@ import { layoutNotes } from "../note-layout";
 import { groupAnnotations } from "../annotation-groups";
 import { tutorMode } from "../services/tutor";
 import type { Material } from "../library";
+import type { useNarration } from "../use-narration";
+import { visualSpeech } from "../canvas-visual";
 
 interface Props {
   page: Page;
@@ -37,7 +39,8 @@ interface Props {
   onActivate: () => void;
   onSelection: (selection: Selection | null) => void;
   onStroke: (stroke: Stroke) => void;
-  onHelp: (region?: Selection | null, intent?: "hint" | "check", groupId?: string) => void;
+  onHelp: (region?: Selection | null, intent?: "hint" | "explain" | "check", groupId?: string, presentation?: "note" | "canvas") => void;
+  narration: ReturnType<typeof useNarration>;
   onToggleGroup: (groupId: string) => void;
   onSource: (ref: NonNullable<Annotation["sourceRef"]>) => void;
   materials: Material[];
@@ -51,6 +54,7 @@ export function PageSurface(props: Props) {
   const [near, setNear] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [exploring, setExploring] = useState<{ annotationId: string; elementId: string | null } | null>(null);
   const notesRef = useRef<HTMLElement>(null);
   const [heights, setHeights] = useState<Record<string, number>>({});
   const groups = groupAnnotations(page.annotations);
@@ -87,11 +91,15 @@ export function PageSurface(props: Props) {
     return () => observer.disconnect();
   }, [page.annotations, page.hiddenHintGroups, props.annotationsVisible, compact]);
   const notesLayout = layoutNotes(
-    groups.map((group) => ({ ...group.annotations[0], id: group.id })),
+    groups.map((group) => {
+      const visual = compact ? group.annotations.reduce<Annotation["visual"]>((last, a) => a.visual && (!last || a.visual.frame.y > last.frame.y) ? a.visual : last, undefined) : undefined;
+      return { ...group.annotations[0], id: group.id, ...(visual ? { anchor: { ...group.anchor, y: visual.frame.y + visual.frame.height + 220 / scale, height: 0 } } : {}) };
+    }),
     scale,
     page.height,
     heights,
     compact,
+    new Set(compact ? groups.filter((g) => g.annotations.some((a) => a.visual)).map((g) => g.id) : []),
   );
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -137,6 +145,7 @@ export function PageSurface(props: Props) {
             selection={selection}
             annotationsVisible={props.annotationsVisible}
             visibleAnnotations={visibleAnnotations}
+            narration={props.narration.playing ?? exploring}
             viewportRef={props.viewportRef}
             onSelection={props.onSelection}
             onStroke={props.onStroke}
@@ -156,7 +165,7 @@ export function PageSurface(props: Props) {
               left: Math.max(
                 6,
                 Math.min(
-                  PAGE_WIDTH * scale - 192,
+                  PAGE_WIDTH * scale - 280,
                   (selection.x + selection.width) * scale + 10,
                 ),
               ),
@@ -173,6 +182,9 @@ export function PageSurface(props: Props) {
             >
               <Sparkles size={15} />
               Ask margin{tutorMode === "demo" ? <small>DEMO</small> : null}
+            </button>
+            <button className="context-draw" onClick={() => props.onHelp(undefined, "explain", undefined, "canvas")} disabled={props.busy}>
+              <PencilLine size={15} /> Draw it
             </button>
             <button
               className="icon-button"
@@ -191,6 +203,33 @@ export function PageSurface(props: Props) {
           </div>
         ) : null}
         {props.composer}
+        {props.annotationsVisible ? groups.filter((g) => hiddenGroups.has(g.id)).map((g) => {
+          const visual = g.annotations.find((a) => a.visual)?.visual;
+          return visual ? <button key={g.id} className="sketch-restore" style={{ left: visual.frame.x * scale, top: visual.frame.y * scale }} onClick={() => props.onToggleGroup(g.id)}><Eye size={14} /> Show sketch · {g.annotations.length} {g.annotations.length === 1 ? "hint" : "hints"}</button> : null;
+        }) : null}
+        {props.annotationsVisible ? visibleAnnotations.filter((a) => a.visual).map((a) => {
+          const visual = a.visual!, isPlaying = props.narration.playing?.annotationId === a.id;
+          const segments = visualSpeech(visual);
+          const focused = (isPlaying ? props.narration.playing : exploring)?.annotationId === a.id
+            ? segments.find((s) => s.id === (isPlaying ? props.narration.playing : exploring)?.elementId) : undefined;
+          return (
+            <div key={a.id} className={`sketch-controls ${isPlaying ? "sketch-speaking" : ""}`} style={{ left: visual.frame.x * scale, top: (visual.frame.y + visual.frame.height) * scale, maxWidth: visual.frame.width * scale }} role="group" aria-label={`${a.mode === "demo" ? "Demo sketch" : "AI sketch"}: ${visual.drawing.title}`}>
+              <button disabled={!props.narration.supported} aria-label={isPlaying ? "Stop explanation" : "Explain sketch aloud"} onClick={() => isPlaying ? props.narration.stop() : props.narration.play(a)}>
+                {isPlaying ? <Square size={13} /> : <Volume2 size={15} />}{isPlaying ? props.narration.playing?.elementId ? "Stop" : "Preparing voice…" : "Explain aloud"}
+              </button>
+              {segments.length ? <button onClick={() => {
+                props.narration.stop();
+                const current = exploring?.annotationId === a.id ? segments.findIndex((s) => s.id === exploring.elementId) : -1;
+                setExploring({ annotationId: a.id, elementId: segments[(current + 1) % segments.length].id });
+              }}>Next detail</button> : null}
+              <button onClick={() => props.onToggleGroup(groups.find((g) => g.annotations.some((note) => note.id === a.id))!.id)} aria-label="Hide this sketch group"><EyeOff size={14} /> Hide</button>
+              <small>{a.mode === "demo" ? "Demo sketch" : "AI sketch · not to scale"} · OpenAI AI voice</small>
+              {a.revision !== undefined && a.revision !== page.revision ? <small>Based on earlier writing</small> : null}
+              {focused ? <span className="sketch-caption" role="status">{focused.text}</span> : null}
+              {props.narration.error ? <span role="status" className="sketch-caption">{props.narration.error}</span> : null}
+            </div>
+          );
+        }) : null}
         {props.annotationsVisible && page.annotations.length ? (
           <aside
             ref={notesRef}
@@ -278,6 +317,13 @@ export function PageSurface(props: Props) {
                     {!collapsed.has(annotation.id) ? (
                       <>
                         <p>{annotation.text}</p>
+                        <button className="note-next" disabled={!props.narration.supported} onClick={() => props.narration.playing?.annotationId === annotation.id ? props.narration.stop() : props.narration.play(annotation)}>
+                          {props.narration.playing?.annotationId === annotation.id ? "Stop explanation" : "Explain aloud"} <Volume2 size={13} />
+                        </button>
+                        {annotation.visual ? <button className="note-next" onClick={() => {
+                          const viewport = props.viewportRef.current, surface = sectionRef.current;
+                          if (viewport && surface) viewport.scrollTo({ top: viewport.scrollTop + surface.getBoundingClientRect().top - viewport.getBoundingClientRect().top + 35 + annotation.visual!.frame.y * scale - 70, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+                        }}>View sketch on page <PencilLine size={13} /></button> : null}
                         {annotation.revision !== undefined &&
                         annotation.revision !== page.revision ? (
                           <small className="earlier-note">

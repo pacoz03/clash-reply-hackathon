@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import AsyncOpenAI, OpenAIError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from .voice import SpeechRequest, synthesize_voice
+from websockets.exceptions import WebSocketException
 
 
 class Schema(BaseModel):
@@ -54,6 +56,8 @@ class TutorRequest(Schema):
     previousHints: list[Annotated[str, Field(max_length=600)]] = Field(default_factory=list, max_length=10)
     sources: list[Source] = Field(default_factory=list, max_length=8)
     observations: list[PreviousObservation] = Field(default_factory=list, max_length=12)
+    presentation: Literal["note", "canvas"] = "note"
+    drawingArea: Region | None = None
 
     @field_validator("image")
     @classmethod
@@ -76,6 +80,8 @@ class TutorRequest(Schema):
     def valid_selection(self):
         if self.selection and (self.selection.x + self.selection.width > 794 or self.selection.y + self.selection.height > self.pageHeight):
             raise ValueError("Selection is outside the page")
+        if self.drawingArea and (self.drawingArea.x + self.drawingArea.width > 794 or self.drawingArea.y + self.drawingArea.height + 280 > 6000):
+            raise ValueError("Drawing area is outside the notebook")
         return self
 
 
@@ -85,6 +91,37 @@ class Citation(Schema):
     quote: str = Field(min_length=12, max_length=500)
 
 
+class DrawingElement(Schema):
+    id: str = Field(min_length=1, max_length=60)
+    kind: Literal["label", "arrow", "line", "box", "ellipse"]
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    width: float = Field(ge=-1, le=1)
+    height: float = Field(ge=-1, le=1)
+    text: str = Field(max_length=100)
+    color: Literal["ink", "sage", "clay"]
+    speech: str = Field(max_length=260)
+
+    @model_validator(mode="after")
+    def valid_bounds(self):
+        if not (0 <= self.x + self.width <= 1 and 0 <= self.y + self.height <= 1):
+            raise ValueError("Drawing element leaves its frame")
+        if self.kind not in ("arrow", "line") and (self.width <= 0 or self.height <= 0):
+            raise ValueError("Drawing shapes require positive dimensions")
+        return self
+
+
+class Drawing(Schema):
+    title: str = Field(min_length=1, max_length=80)
+    elements: list[DrawingElement] = Field(min_length=1, max_length=24)
+
+    @model_validator(mode="after")
+    def unique_ids(self):
+        if len({e.id for e in self.elements}) != len(self.elements):
+            raise ValueError("Drawing IDs must be unique")
+        return self
+
+
 class Decision(Schema):
     kind: Literal["hint", "question"]
     text: str = Field(min_length=1, max_length=600)
@@ -92,6 +129,7 @@ class Decision(Schema):
     outcome: Literal["needs-work", "progress", "uncertain"]
     observation: str = Field(min_length=1, max_length=300)
     source: Citation | None
+    drawing: Drawing | None = None
 
 
 INSTRUCTIONS = """You are margin, a calm, precise learning companion for university math and physics.
@@ -118,6 +156,23 @@ Summarize the observable difficulty, help or improvement in one short editable o
 With a selection, keep the anchor exactly equal to it. Otherwise choose a small region around
 the relevant visible step, in page coordinates: width=794 and height=pageHeight; never in image pixels.
 If no reliable location is visible, set anchor=null. Text max 600 chars, observation max 300 chars.
+
+When presentation=canvas and drawingArea is available, teach through a small sketch drawn directly
+on the notebook: arrows, force vectors, geometric outlines, component diagrams, labels or a short
+formula. Use a drawing only if the visible exercise supports it. If uncertain, ask a clarification
+and set drawing=null. For presentation=note always set drawing=null.
+The drawing is a scene with a short title and at most 16 elements. Coordinates x,y and dimensions
+width,height are NORMALIZED to the supplied drawingArea (0 to 1), not page or image pixels.
+Arrow/line endpoints are (x+width,y+height); negative dimensions are allowed for arrows/lines only.
+Both endpoints must stay inside 0..1. Label/box/ellipse dimensions must be positive.
+Kinds: label (short text), arrow (directed vector), line (segment), box, ellipse.
+Each element requires a unique id, kind, x,y,width,height,text,color,speech. Use text="" and
+speech="" when unnecessary. Colors: ink for structure, sage for guidance, clay for emphasis.
+Use Unicode math (θ, Σ, ², →), never LaTeX markup. Keep text short and reserve enough space
+for labels; avoid overlap. Draw force arrows from a common origin with physically appropriate
+directions, label the forces, do not invent values or missing forces/constraints. A schematic
+is not to scale. Do not output a complete worked solution. Use 2 to 5 concise speech segments
+on the elements being explained, in meaningful drawing order, to guide a spoken walkthrough.
 """
 
 app = FastAPI(title="margin tutor", version="0.2.0")
@@ -147,7 +202,7 @@ async def limit_body(request: Request, call_next):
 
 @app.get("/health")
 def health():
-    return {"service": "margin", "configured": bool(os.environ.get("OPENAI_API_KEY") and os.environ.get("OPENAI_MODEL"))}
+    return {"service": "margin", "configured": bool(os.environ.get("OPENAI_API_KEY") and os.environ.get("OPENAI_MODEL")), "voiceConfigured": bool(os.environ.get("OPENAI_API_KEY") and os.environ.get("OPENAI_VOICE_MODEL"))}
 
 
 async def infer(request: TutorRequest) -> Decision:
@@ -164,7 +219,7 @@ async def infer(request: TutorRequest) -> Decision:
                 {"type": "input_image", "image_url": request.image, "detail": "high"},
             ]}],
             text_format=Decision,
-            max_output_tokens=3000,
+            max_output_tokens=6500 if request.presentation == "canvas" else 3000,
             store=False,
         )
     if response.output_parsed is None:
@@ -182,6 +237,8 @@ def build_response(request: TutorRequest, decision: Decision):
     if anchor.x + anchor.width > 794 or anchor.y + anchor.height > request.pageHeight:
         anchor = request.selection or fallback
     annotation = {"id": str(uuid4()), "kind": decision.kind, "text": decision.text, "anchor": anchor.model_dump(), "revision": request.revision, "mode": "connected"}
+    if request.presentation == "canvas" and request.drawingArea and decision.drawing:
+        annotation["visual"] = {"frame": request.drawingArea.model_dump(), "drawing": decision.drawing.model_dump()}
     citation = decision.source
     if citation:
         quote = normalize(citation.quote)
@@ -201,3 +258,14 @@ async def tutor_help(request: TutorRequest):
     except (TimeoutError, OpenAIError, ValidationError):
         raise HTTPException(502, "The tutor is unavailable. Your writing stays on your device.") from None
     return build_response(request, decision)
+
+
+@app.post("/tutor/speech")
+async def tutor_speech(script: SpeechRequest, request: Request):
+    try:
+        result = await asyncio.wait_for(synthesize_voice(script, request.is_disconnected), timeout=45)
+    except HTTPException:
+        raise
+    except (TimeoutError, OpenAIError, ValueError, OSError, WebSocketException):
+        raise HTTPException(502, "The OpenAI voice is unavailable. Your notes are safe.") from None
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})

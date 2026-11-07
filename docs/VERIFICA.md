@@ -2,6 +2,18 @@
 
 7 novembre 2026, branch `codex/backup-gian-merge-chri` (base `gian`). Questo aggiornamento sostituisce lo stato delle verifiche nella sezione storica sotto riportata.
 
+## Disegni e voce OpenAI sul canvas
+
+Aggiornamento 7 novembre 2026, branch `gian`: 45 test frontend e 24 backend,
+build riuscita. Schema AI reale su equazione stampata sintetica (sei elementi,
+9,81 s) e audio reale `gpt-realtime-2.1-mini`/`marin` (5,25 s, generazione 5,36 s).
+Browser: schema dentro Konva, importazione, ripresa dopo reload, voce segmentata,
+hide/show, cache e layout compatto. Screenshot margin-canvas-openai-voice.png.
+La segnalazione iPad “animazioni ma nessun audio” ha portato al player HTML audio
+con attivazione nel tocco e audioSession playback; verifica hardware della
+correzione ancora da confermare. I test coprono anche attivazione media, errori
+autoplay, cancellazione, provenienza delle clip e geometria delle scene.
+
 ## Prima chiamata AI reale
 
 - Modello scelto dall'utente: `gpt-6.1-terra`, via backend Python/Responses e schema `Decision` esistente.

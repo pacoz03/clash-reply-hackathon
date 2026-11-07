@@ -28,6 +28,53 @@ Apri l'indirizzo mostrato da Vite, normalmente `http://localhost:5173`. La UI è
 
 Il primo quaderno contiene un esempio illustrativo sulla regola della catena, con passaggio volutamente incompleto. I nuovi quaderni partono vuoti. Non sono inclusi materiali universitari autentici.
 
+## Disegni e voce sul foglio
+
+Seleziona un passaggio e premi **Draw it**, oppure apri Ask margin e scegli
+**Draw on page**. Il tutor può aggiungere frecce, vettori di forza, forme,
+etichette e brevi formule direttamente nel canvas. Gli elementi compaiono
+progressivamente, restano allineati allo zoom e vengono salvati con il quaderno.
+Lo spazio viene cercato evitando tratti, consegne importate e altri schemi;
+se necessario il foglio si estende, conservando le dimensioni dell’originale.
+Il massimo resta 6.000 unità; se non c’è spazio, aggiungere un foglio vuoto.
+
+**Next detail** esplora gli elementi; **Explain aloud** genera una spiegazione
+con voce OpenAI e mette in evidenza il dettaglio durante il relativo segmento
+audio. **Hide** nasconde il gruppo e interrompe la voce; **Show sketch** lo
+ripristina. Il controllo globale del livello AI rimane disponibile. Snapshot
+inviati al tutor ed export PNG continuano a escludere tutti gli elementi AI.
+Le descrizioni testuali restano accessibili anche senza audio.
+
+Configurazione server aggiuntiva, con la stessa `OPENAI_API_KEY`:
+
+```dotenv
+OPENAI_VOICE_MODEL=gpt-realtime-2.1-mini
+OPENAI_VOICE=marin
+```
+
+Installare `backend/requirements.txt`, che include `openai[realtime]`, e riavviare
+il backend dopo la configurazione. `POST /tutor/speech` riceve fino a sei segmenti
+con `id` e `text` (massimo 1.800 caratteri complessivi) e restituisce clip WAV
+24 kHz mono associate agli stessi ID. La Realtime API è chiamata esclusivamente
+dal server; la chiave non arriva al browser. Nessun fallback a una voce di sistema.
+La voce è dichiarata AI nell’interfaccia. Il testo della spiegazione viene inviato
+solo premendo Explain aloud; la voce funziona anche per uno schema dimostrativo,
+che resta esplicitamente distinto da un’analisi AI del foglio.
+
+Il browser usa un unico elemento audio multimediale, attivato dal tocco, con
+sessione `playback` dove supportata: evita il canale Web Audio che su iPad può
+restare silenzioso pur facendo avanzare le animazioni. Le evidenziazioni seguono
+gli eventi `playing`/`ended`. Il browser conserva in memoria fino a cinque
+spiegazioni per riutilizzarle senza nuove chiamate; l’audio non è salvato in
+IndexedDB. La rete e l’accesso al modello vocale sono necessari alla prima lettura.
+L’origine voce è `VITE_VOICE_API_URL`, oppure `VITE_TUTOR_API_URL`, oppure `/api`.
+
+Riferimenti ufficiali: [Realtime conversations](https://developers.openai.com/api/docs/guides/realtime-conversations)
+e [GPT-Realtime-2.1 Mini](https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini).
+La prima versione è stata provata con un’equazione sintetica; la qualità dei
+singoli schemi, il posizionamento e la correttezza fisica richiedono controllo.
+Non sono implementate trascrizione vocale o simulazioni fisiche interattive.
+
 ## Modalità demo e AI reale
 
 Il gateway TypeScript importato da `chri` è conservato come alternativa sperimentale,

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { annotationSchema, uid, type Page, type Selection } from "../model";
 import { citationMatches, type SourceExcerpt } from "./materials";
+import { findDrawingArea, visualSchema } from "../canvas-visual";
+import { demoDrawing } from "./visual-demo";
 
 export const tutorMode = import.meta.env.VITE_TUTOR_API_URL
   ? "connected"
@@ -16,6 +18,8 @@ export interface TutorRequest {
   intent?: "hint" | "explain" | "check";
   sources?: SourceExcerpt[];
   observations?: { summary: string; outcome: string; revision: number }[];
+  presentation?: "note" | "canvas";
+  drawingArea?: Selection | null;
 }
 export const tutorResponseSchema = z.object({
   pageId: z.string(),
@@ -78,6 +82,11 @@ export async function requestTutor(
     }
     result.annotation.revision = request.revision;
     result.annotation.mode = "connected";
+    if (result.annotation.visual) {
+      const frame = request.drawingArea;
+      if (request.presentation !== "canvas" || !frame) delete result.annotation.visual;
+      else result.annotation.visual = visualSchema.parse({ ...result.annotation.visual, frame });
+    }
     return result;
   }
   // Deliberately scripted: never claim to have read or verified the student's work.
@@ -123,6 +132,9 @@ export async function requestTutor(
       source: "Local demo · scripted guidance, no AI analysis",
       revision: request.revision,
       mode: "demo",
+      ...(request.presentation === "canvas" ? {
+        visual: { frame: request.drawingArea ?? findDrawingArea(page, request.selection)!, drawing: demoDrawing(page.template === "chain-rule") },
+      } : {}),
     },
     observation: {
       summary:

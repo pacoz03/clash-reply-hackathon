@@ -32,6 +32,9 @@ import {
 } from "lucide-react";
 import { PageSurface } from "./components/PageSurface";
 import { findAnnotationGroup } from "./annotation-groups";
+import { annotationGroupId } from "./annotation-groups";
+import { findDrawingArea } from "./canvas-visual";
+import { useNarration } from "./use-narration";
 import { LibraryHome } from "./components/LibraryHome";
 import {
   CourseMaterialPanel,
@@ -102,6 +105,8 @@ export default function App() {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [intent, setIntent] = useState<"hint" | "explain" | "check">("hint");
+  const [presentation, setPresentation] = useState<"note" | "canvas">("note");
+  const narration = useNarration();
   const [panel, setPanel] = useState<"materials" | "session" | null>(null);
   const [sourceView, setSourceView] = useState<SourceView | null>(null);
   const [indexing, setIndexing] = useState<string | null>(null);
@@ -121,6 +126,11 @@ export default function App() {
     notebook?.pages.find((p) => p.id === notebook.activePageId) ??
     notebook?.pages[0];
   const history = page ? state.history[page.id] : undefined;
+  const speakingNote = page?.annotations.find((a) => a.id === narration.playing?.annotationId);
+  const speakingHidden = speakingNote && page?.hiddenHintGroups?.includes(annotationGroupId(speakingNote));
+  useEffect(() => {
+    if (narration.playing && (!annotationsVisible || !speakingNote || speakingHidden || (speakingNote.revision !== undefined && speakingNote.revision !== page?.revision))) narration.stop();
+  }, [annotationsVisible, speakingNote, speakingHidden, page?.revision, narration.playing]);
   const scale = Math.min(2.4, Math.max(0.25, fitScale * zoom));
   const edit = (action: EditorAction, notebookId = activeId) => {
     if (notebookId) dispatch({ type: "edit", notebookId, action });
@@ -314,6 +324,7 @@ export default function App() {
     region?: Selection | null,
     requestedIntent: "hint" | "explain" | "check" = "hint",
     groupId?: string,
+    requestedPresentation: "note" | "canvas" = "note",
   ) => {
     if (!activeId || busy || requestRef.current) return;
     const targetNotebookId = activeId;
@@ -329,6 +340,11 @@ export default function App() {
     const requestGroupId = groupId ?? (requestRegion
       ? findAnnotationGroup(target.annotations, requestRegion) ?? uid()
       : `page:${pageId}`);
+    const drawingArea = requestedPresentation === "canvas" ? findDrawingArea(target, requestRegion) : null;
+    if (requestedPresentation === "canvas" && !drawingArea) {
+      setNotice("Add a blank page to make room for a sketch.");
+      return;
+    }
     const prompt = composerPage === pageId ? question.trim() : "";
     setBusy(true);
     setNotice("");
@@ -345,7 +361,9 @@ export default function App() {
           selection: requestRegion,
           question: prompt,
           intent: requestedIntent,
-          previousHints: target.annotations.slice(-10).map((a) => a.text),
+          presentation: requestedPresentation,
+          drawingArea,
+          previousHints: target.annotations.filter((a) => a.mode === tutorMode).slice(-10).map((a) => a.text),
           observations: targetEntry?.notebook.observations
             ?.filter((o) => o.pageId === pageId && o.mode === tutorMode)
             .slice(-12)
@@ -407,6 +425,14 @@ export default function App() {
       setQuestion("");
       setComposerPage(null);
       setSelection(null);
+      if (response.annotation.visual) {
+        const frame = response.annotation.visual.frame;
+        requestAnimationFrame(() => {
+          const surface = Array.from(viewportRef.current?.querySelectorAll<HTMLElement>("[data-page-id]") ?? []).find((el) => el.dataset.pageId === pageId);
+          const viewport = viewportRef.current;
+          if (surface && viewport) viewport.scrollTo({ top: viewport.scrollTop + surface.getBoundingClientRect().top - viewport.getBoundingClientRect().top + 35 + frame.y * scale - 70, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+        });
+      }
     } catch (error) {
       if (controller.signal.aborted) {
         if (controller.signal.reason === "timeout")
@@ -676,13 +702,13 @@ export default function App() {
           onChange={(e) => void importFile(e.target.files?.[0])}
         />
       </header>
-      {notice ? (
+      {notice || narration.error ? (
         <div className="notice" role="status">
-          <span>{notice}</span>
+          <span>{notice || narration.error}</span>
           <button
             className="icon-button"
             aria-label="Dismiss message"
-            onClick={() => setNotice("")}
+            onClick={() => { setNotice(""); narration.clearError(); }}
           >
             <X size={15} />
           </button>
@@ -865,9 +891,10 @@ export default function App() {
                   onStroke={(stroke) =>
                     edit({ type: "stroke", pageId: p.id, stroke })
                   }
-                  onHelp={(region, nextIntent, groupId) =>
-                    void help(p.id, region, nextIntent, groupId)
+                  onHelp={(region, nextIntent, groupId, nextPresentation) =>
+                    void help(p.id, region, nextIntent, groupId, nextPresentation)
                   }
+                  narration={narration}
                   onToggleGroup={(groupId) => edit({ type: "toggle-hint-group", pageId: p.id, groupId })}
                   onSource={(ref) => {
                     setSourceView(ref);
@@ -901,7 +928,7 @@ export default function App() {
                         }}
                         onSubmit={(e) => {
                           e.preventDefault();
-                          void help(p.id, undefined, intent);
+                          void help(p.id, undefined, intent, undefined, presentation);
                         }}
                       >
                         <div className="composer-heading">
@@ -945,6 +972,10 @@ export default function App() {
                           rows={2}
                           maxLength={1000}
                         />
+                        <div className="help-presentation" role="group" aria-label="Answer format">
+                          <button type="button" aria-pressed={presentation === "note"} onClick={() => setPresentation("note")}>Hint</button>
+                          <button type="button" aria-pressed={presentation === "canvas"} onClick={() => setPresentation("canvas")}>Draw on page</button>
+                        </div>
                         <button
                           type="submit"
                           className="button button-primary"
@@ -957,6 +988,8 @@ export default function App() {
                           )}
                           {busy
                             ? "Looking at your page…"
+                            : presentation === "canvas"
+                              ? "Draw it on my page"
                             : intent === "check"
                               ? "Check my update"
                               : intent === "explain"
