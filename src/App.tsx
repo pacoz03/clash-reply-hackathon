@@ -13,7 +13,7 @@ const tools = [
   { id: 'select', label: 'Seleziona', key: 'S', icon: Scan },
   { id: 'hand', label: 'Sposta', key: 'H', icon: Hand },
 ] as const;
-const colors = ['#273c46', '#4c7052', '#b76e51'];
+const colors = ['#273c46', '#2a5c8a', '#b4532f'];
 
 export default function App() {
   const [state, dispatch] = useReducer(editorReducer, undefined, (): EditorState => ({ notebook: initialNotebook(), history: {} }));
@@ -145,7 +145,7 @@ export default function App() {
         <div className="toolbar" role="toolbar" aria-label="Strumenti del quaderno">
           <div className="tool-group">{tools.map(({ id, label, key, icon: Icon }) => <button key={id} className={`tool-button ${tool === id ? 'selected' : ''}`} aria-label={label} aria-pressed={tool === id} title={`${label} (${key})`} onClick={() => setTool(id)}><Icon size={19} /><span>{label}</span></button>)}</div>
           <span className="toolbar-divider" />
-          <div className="ink-options"><div className="color-options" aria-label="Colore inchiostro">{colors.map((c, i) => <button key={c} style={{ '--ink': c } as React.CSSProperties} className={`color-button ${c === color ? 'chosen' : ''}`} aria-label={`Inchiostro ${['blu scuro', 'verde', 'terracotta'][i]}`} aria-pressed={c === color} onClick={() => { setColor(c); setTool('pen'); }} />)}</div><select className="width-select" aria-label="Spessore penna" value={penWidth} onChange={e => setPenWidth(Number(e.target.value))}><option value={1.5}>Fine</option><option value={2.5}>Medio</option><option value={4}>Spesso</option></select></div>
+          <div className="ink-options"><div className="color-options" aria-label="Colore inchiostro">{colors.map((c, i) => <button key={c} style={{ '--ink': c } as React.CSSProperties} className={`color-button ${c === color ? 'chosen' : ''}`} aria-label={`Inchiostro ${['scuro', 'blu', 'terracotta'][i]}`} aria-pressed={c === color} onClick={() => { setColor(c); setTool('pen'); }} />)}</div><select className="width-select" aria-label="Spessore penna" value={penWidth} onChange={e => setPenWidth(Number(e.target.value))}><option value={1.5}>Fine</option><option value={2.5}>Medio</option><option value={4}>Spesso</option></select></div>
           <div className="history-tools"><button className="icon-button" aria-label="Annulla" title="Annulla (⌘Z)" disabled={!history?.past.length} onClick={() => dispatch({ type: 'undo', pageId: page.id })}><Undo2 size={18} /></button><button className="icon-button" aria-label="Ripristina" title="Ripristina (⇧⌘Z)" disabled={!history?.future.length} onClick={() => dispatch({ type: 'redo', pageId: page.id })}><Redo2 size={18} /></button><button className="icon-button" aria-label="Svuota i tratti" title="Svuota i tratti (puoi annullare)" disabled={!page.strokes.length} onClick={() => dispatch({ type: 'clear-strokes', pageId: page.id })}><RotateCcw size={16} /></button></div>
         </div>
         {notice ? <div className="notice" role="status"><span>{notice}</span><button className="icon-button" aria-label="Chiudi messaggio" onClick={() => setNotice('')}><X size={15} /></button></div> : null}

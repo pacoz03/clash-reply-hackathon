@@ -29,16 +29,16 @@ const Paper = memo(function Paper({ page }: { page: Page }) {
     {page.paper === 'dots' ? Array.from({ length: Math.floor(page.height / 24) }, (_, row) => Array.from({ length: 31 }, (_, col) => <Circle key={`${row}-${col}`} x={36 + col * 24} y={36 + row * 24} radius={0.8} fill="#d6dbce" />)) : null}
     {page.template ? <>
       <Rect x={47} y={61} width={500} height={119} fill="#fffef9" />
-      <Text x={60} y={72} text="ESEMPIO GUIDATO   /   01" fontFamily="DM Sans" fontSize={11} letterSpacing={1.4} fill="#758070" />
+      <Text x={60} y={72} text="ESEMPIO GUIDATO   /   01" fontFamily="DM Sans" fontSize={12} letterSpacing={1.4} fill="#5a6a5c" />
       <Text x={60} y={106} text="La regola della catena" fontFamily="Lora" fontSize={29} fill="#293b34" />
-      <Text x={60} y={153} text="Calcola la derivata della seguente funzione." fontFamily="DM Sans" fontSize={14} fill="#647065" />
+      <Text x={60} y={153} text="Calcola la derivata della seguente funzione." fontFamily="DM Sans" fontSize={14} fill="#4a5a4e" />
       <Text x={71} y={217} text="f(x) = sin(x² + 1)" fontFamily="Caveat" fontSize={38} fill="#273c46" />
-      <Text x={68} y={300} text="Provo a derivare…" fontFamily="Caveat" fontSize={27} fill="#697369" />
+      <Text x={68} y={300} text="Provo a derivare…" fontFamily="Caveat" fontSize={27} fill="#5a6a5c" />
       <Text x={71} y={359} text="f′(x) = cos(x² + 1)" fontFamily="Caveat" fontSize={36} fill="#273c46" />
-      <Text x={71} y={429} text="Manca qualcosa?" fontFamily="Caveat" fontSize={27} fill="#697369" />
+      <Text x={71} y={429} text="Manca qualcosa?" fontFamily="Caveat" fontSize={27} fill="#5a6a5c" />
       <Line points={[557, 206, 557, 500]} stroke="#d6dccd" strokeWidth={1} dash={[3, 5]} />
-      <Text x={586} y={225} width={145} text="Un po’ di spazio\nper un altro\npunto di vista." lineHeight={1.6} fontFamily="Lora" fontStyle="italic" fontSize={17} fill="#8a9485" />
-      <Text x={60} y={page.height - 72} text="Esempio illustrativo · puoi scrivere sopra oppure aggiungere un foglio vuoto." fontFamily="DM Sans" fontSize={10} fill="#8b9186" />
+      <Text x={586} y={225} width={145} text={"Un po’ di spazio\nper un altro\npunto di vista."} lineHeight={1.6} fontFamily="Lora" fontStyle="italic" fontSize={17} fill="#5a6a5c" />
+      <Text x={60} y={page.height - 72} text="Esempio illustrativo · puoi scrivere sopra oppure aggiungere un foglio vuoto." fontFamily="DM Sans" fontSize={12} fill="#5a6a5c" />
     </> : null}
   </>;
 });
@@ -122,12 +122,12 @@ export const NotebookCanvas = forwardRef<CanvasHandle, Props>(function NotebookC
           const a = annotation.anchor;
           const noteY = Math.max(16, Math.min(page.height - 178, a.y + index * 168));
           return <Group key={annotation.id}>
-            <Rect x={a.x} y={a.y} width={a.width} height={a.height} fill="#d4e89a" opacity={0.24} cornerRadius={4} />
-            <Line points={[a.x, a.y + a.height + 4, a.x + a.width, a.y + a.height + 4]} stroke="#66804c" strokeWidth={1.5} />
-            <Arrow points={[570, noteY + 26, Math.min(a.x + a.width + 5, 550), a.y + a.height / 2]} stroke="#66804c" fill="#66804c" strokeWidth={1.2} pointerLength={6} pointerWidth={5} />
-            <Rect x={577} y={noteY} width={196} height={160} fill="#f0f4e5" cornerRadius={5} />
-            <Text x={591} y={noteY + 14} text="UN INDIZIO" fontFamily="DM Sans" fontSize={9} letterSpacing={1.5} fill="#536b3e" />
-            <Text x={591} y={noteY + 37} width={166} text={annotation.text} fontFamily="DM Sans" fontSize={12} lineHeight={1.5} fill="#36492e" />
+            <Rect x={a.x} y={a.y} width={a.width} height={a.height} fill="#c9ddc8" opacity={0.22} stroke="#2f5a43" strokeWidth={1.5} dash={[5, 4]} cornerRadius={4} />
+            <Arrow points={[570, noteY + 26, Math.min(a.x + a.width + 5, 550), a.y + a.height / 2]} stroke="#2f5a43" fill="#2f5a43" strokeWidth={1.2} pointerLength={6} pointerWidth={5} />
+            <Rect x={577} y={noteY} width={196} height={160} fill="#e3ede2" cornerRadius={5} />
+            <Rect x={577} y={noteY} width={5} height={160} fill="#2f5a43" cornerRadius={[5, 0, 0, 5]} />
+            <Text x={594} y={noteY + 12} text={`INDIZIO ${String(index + 1).padStart(2, '0')}`} fontFamily="DM Sans" fontSize={12} fontStyle="bold" letterSpacing={1} fill="#2f5a43" />
+            <Text x={594} y={noteY + 36} width={166} text={annotation.text} fontFamily="DM Sans" fontSize={13} lineHeight={1.5} fill="#2d3b32" />
           </Group>;
         }) : null}
         {selection ? <Rect {...selection} fill="#819dba" opacity={0.2} stroke="#395a7d" strokeWidth={2} dash={[6, 4]} cornerRadius={3} /> : null}

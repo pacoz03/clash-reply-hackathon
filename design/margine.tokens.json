@@ -1,0 +1,99 @@
+{
+  "$description": "Token di design di Margine v0.1 (proposta). Formato ispirato alla bozza Design Tokens Community Group ($value/$type, riferimenti con {gruppo.nome}). Fonte di verità per colori, tipografia, spaziatura. Spiegazione e regole d'uso: docs/DESIGN.md.",
+  "color": {
+    "$type": "color",
+    "surface": {
+      "paper":   { "$value": "#FFFEF9", "$description": "Foglio. Solo il foglio e le miniature." },
+      "canvas":  { "$value": "#EEEFE7", "$description": "Sfondo dell'area di lavoro attorno al foglio." },
+      "bg":      { "$value": "#F5F4EE", "$description": "Sfondo dell'app e barre secondarie." },
+      "panel":   { "$value": "#FAFAF5", "$description": "Header, barra pagine, pannello tutor, toolbar." }
+    },
+    "text": {
+      "primary":   { "$value": "#2D3B32", "$description": "Testo principale. 10,2:1 su canvas." },
+      "secondary": { "$value": "#4A5A4E", "$description": "Etichette, testo di supporto. 6,3:1 su canvas." },
+      "tertiary":  { "$value": "#5A6A5C", "$description": "Segnaposto, note, metadati. 5,0:1 su canvas, 4,8:1 su tutor.fill: il minimo ammesso." },
+      "on-green":  { "$value": "#F3F7E7", "$description": "Testo sul pulsante primario. 8,5:1 su brand.green." }
+    },
+    "brand": {
+      "green":       { "$value": "#344D3D", "$description": "Verde inchiostro: azione primaria." },
+      "green-hover": { "$value": "#253F2E" },
+      "sage":        { "$value": "#6F8F3F", "$description": "Accento salvia. Solo decorativo o testo grande (3,5:1 su panel): il punto del wordmark, indicatori. Mai testo piccolo." },
+      "sage-soft":   { "$value": "#E8EFCF", "$description": "Riempimenti morbidi: stato selezionato, evidenziazione." }
+    },
+    "tutor": {
+      "fill": { "$value": "#E3EDE2", "$description": "Sfondo delle annotazioni del tutor." },
+      "edge": { "$value": "#2F5A43", "$description": "Filetto e icona del tutor. 6,6:1 su tutor.fill." }
+    },
+    "pen": {
+      "ink":        { "$value": "#273C46", "$description": "Inchiostro (predefinito). 11,4:1 sulla carta." },
+      "blue":       { "$value": "#2A5C8A", "$description": "Blu. Sostituisce il verde: il verde appartiene al tutor." },
+      "terracotta": { "$value": "#B4532F", "$description": "Terracotta, per correzioni dello studente. 4,9:1 sulla carta." }
+    },
+    "line": {
+      "subtle": { "$value": "#E2E4DA", "$description": "Separatori decorativi. Non identificano componenti." },
+      "ui":     { "$value": "#7F8A7B", "$description": "Bordi di campi e controlli che devono essere riconoscibili. 3,4:1 su panel." },
+      "paper-dot":  { "$value": "#D6DBCE", "$description": "Punti del foglio. Decorativo." },
+      "paper-rule": { "$value": "#E5E7DE", "$description": "Righe del foglio. Decorativo." }
+    },
+    "state": {
+      "selection":     { "$value": "#395A7D", "$description": "Rettangolo di selezione: sempre tratteggiato, mai pieno." },
+      "focus":         { "$value": "#628548", "$description": "Anello di focus, 2px, offset 4px. 4,0:1 su panel." },
+      "notice-bg":     { "$value": "#F5EDDB" },
+      "notice-border": { "$value": "#E6D6B5" },
+      "notice-text":   { "$value": "#6B4F30", "$description": "6,5:1 su notice.bg. Sostituisce #806749 (4,6:1)." },
+      "error-text":    { "$value": "#8A4A2F", "$description": "6,7:1 sulla carta. Sempre con icona o parola, mai solo colore." }
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "ui":    { "$value": ["DM Sans", "system-ui", "sans-serif"], "$description": "Interfaccia: pulsanti, etichette, pannelli." },
+      "voice": { "$value": ["Lora", "Georgia", "serif"], "$description": "Voce del marchio e del tutor: wordmark, titoli, citazioni. Solo pesi 400 e 400 corsivo (gli unici installati)." },
+      "hand":  { "$value": ["Caveat", "cursive"], "$description": "Solo dentro il foglio, per simulare la scrittura a mano dello studente nei contenuti di esempio. Mai nell'interfaccia." }
+    },
+    "size": {
+      "$type": "dimension",
+      "caption": { "$value": "12px", "$description": "Minimo assoluto, anche per etichette in maiuscolo." },
+      "ui":      { "$value": "14px" },
+      "body":    { "$value": "15px" },
+      "input":   { "$value": "16px", "$description": "Campi di testo: da verificare su iPad che non scatti lo zoom al focus." },
+      "title-s": { "$value": "20px" },
+      "title":   { "$value": "26px" },
+      "wordmark":{ "$value": "33px" }
+    },
+    "line-height": {
+      "$type": "number",
+      "tight": { "$value": 1.2 },
+      "ui":    { "$value": 1.45 },
+      "body":  { "$value": 1.6 }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "1": { "$value": "4px" },
+    "2": { "$value": "8px" },
+    "3": { "$value": "12px" },
+    "4": { "$value": "16px" },
+    "6": { "$value": "24px" },
+    "8": { "$value": "32px" },
+    "12": { "$value": "48px" }
+  },
+  "radius": {
+    "$type": "dimension",
+    "sm":   { "$value": "4px" },
+    "md":   { "$value": "6px" },
+    "lg":   { "$value": "9px" },
+    "pill": { "$value": "999px" }
+  },
+  "size": {
+    "$type": "dimension",
+    "target-fine":   { "$value": "36px", "$description": "Minimo con mouse. Sopra i 24px di WCAG 2.5.8 e i 28pt minimi di Apple." },
+    "target-coarse": { "$value": "44px", "$description": "Con tocco o penna (pointer: coarse): dimensione predefinita Apple." },
+    "icon-s": { "$value": "16px" },
+    "icon-m": { "$value": "20px" }
+  },
+  "motion": {
+    "$type": "duration",
+    "fast": { "$value": "150ms" }
+  }
+}
